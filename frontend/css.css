@@ -1,0 +1,149 @@
+/* GLOBAL STYLING */
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f9;
+  margin: 0;
+  padding: 0;
+}
+
+/* HEADER BAR */
+.header {
+  background: #2c3e50;
+  color: white;
+  padding: 20px 30px;
+  font-size: 26px;
+  font-weight: bold;
+}
+
+/* MAIN CONTENT WRAPPER */
+.container {
+  max-width: 950px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+/* CARD BOXES */
+.card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+}
+
+.card h2 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+/* INPUTS */
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 15px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
+
+/* BUTTONS */
+button {
+  width: 100%;
+  padding: 12px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2980b9;
+}
+
+/* GREEN LINK BUTTON */
+.link-btn {
+  display: inline-block;
+  background: #27ae60;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 16px;
+  margin-top: 15px;
+}
+
+.link-btn:hover {
+  background: #1e8449;
+}
+
+/* TABLE STYLING */
+#tableContainer {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th {
+  background: #ecf0f1;
+  padding: 12px;
+  font-weight: bold;
+  border-bottom: 2px solid #ddd;
+}
+
+td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+tr:hover {
+  background: #f2f2f2;
+}
+
+/* POPUP (if needed by frontend) */
+#popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  z-index: 900;
+}
+
+#details-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 420px;
+  background: white;
+  padding: 22px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.25);
+  display: none;
+  z-index: 1000;
+}
+
+#details-popup button {
+  margin-top: 15px;
+  background: #007bff;
+  color: white;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#details-popup button:hover {
+  background: #005dc1;
+}
