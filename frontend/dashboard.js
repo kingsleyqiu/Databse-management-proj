@@ -1,9 +1,31 @@
-// Dashboard functionality
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadStats();
-  await loadRecentStations();
-  await loadStationUtilization();
-  await loadChargerStatusSummary();
+// ---------------------- AUTH CHECK ----------------------
+document.addEventListener("DOMContentLoaded", () => {
+  const role = localStorage.getItem("userRole");
+  const userId = localStorage.getItem("userId");
+
+  // If NOT logged in → send back to login
+  if (!role || !userId) {
+    alert("You must log in first.");
+    window.location.href = "index.html";
+    return;
+  }
+
+  // Show user info
+  document.getElementById("userInfo").innerHTML =
+    `<p>Logged in as <b>${role}</b> (User ID: ${userId})</p>`;
+
+  // If its user, hides the tabs
+  if (role !== "admin") {
+  document.querySelectorAll(".adminLimited").forEach(span => {
+    span.style.display = "none"; // hides both link and the pipe
+    });
+  }
+
+  // Load dashboard data
+  loadStats();
+  loadRecentStations();
+  loadStationUtilization();
+  loadChargerStatusSummary();
 });
 
 async function loadStats() {
