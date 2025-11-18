@@ -5,6 +5,7 @@ const cors = require('cors');
 const { Sequelize } = require('sequelize');
 
 const app = express();
+const path = require('path');
 
 // Middleware setup
 app.use(express.json());
@@ -54,8 +55,12 @@ app.use('/api/sessions', sessionRoutes);
 const reservationRoutes = require('./routes/reservationRoutes');
 app.use('/api/reservations', reservationRoutes);
 
+// Serve static files from frontend directory (after API routes)
+app.use(express.static(path.join(__dirname, 'frontend')));
+
+// Serve frontend index.html for root route (must be after static middleware)
 app.get('/', (req, res) => {
-  res.send('EV Charging API is running');
+  res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
 // Start server
 const PORT = process.env.PORT || 3000;

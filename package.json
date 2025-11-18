@@ -10,7 +10,7 @@
     "mysql2": "^3.15.3",
     "sequelize": "^6.37.7"
   },
-  "name": "data-proj",
+  "name": "database-management-proj",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
