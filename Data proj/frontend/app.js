@@ -18,20 +18,33 @@ document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const formData = Object.fromEntries(new FormData(e.target));
-  const res = await fetch("http://localhost:3000/api/login/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json"},
-    body: JSON.stringify(formData)
-  });
+  const loginResult = document.getElementById("loginResult");
+  loginResult.innerHTML = '<p>Logging in...</p>';
 
-  const data = await res.json();
+  try {
+    const res = await fetch("http://localhost:3000/api/login/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json"},
+      credentials: 'include', // Add this for session cookies
+      body: JSON.stringify(formData)
+    });
 
-  // Redirect on ANY successful response
-  if (res.ok) {
-    window.location.href = "dashboard.html"; 
-  } else {
-    document.getElementById("loginResult").innerText =
-      data.message || "Login failed";
+    // Check response status before parsing
+    if (!res.ok) {
+      const errorData = await res.json();
+      loginResult.innerHTML = `<p style="color: red;">${errorData.error || errorData.message || 'Login failed'}</p>`;
+      return;
+    }
+
+    const data = await res.json();
+    console.log("Login successful:", data);
+
+    // Redirect to dashboard on success
+    window.location.href = "dashboard.html";
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    loginResult.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
   }
 });
 

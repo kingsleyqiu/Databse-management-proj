@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS Users (
     email VARCHAR(100) NOT NULL UNIQUE,
     phone VARCHAR(20),
     password VARCHAR(255) NOT NULL DEFAULT 'password123',
-    role ENUM('admin', 'user', 'guest') DEFAULT 'user',
+    role ENUM('admin', 'user') DEFAULT 'user',
     car_id INT,
     FOREIGN KEY (car_id) REFERENCES Cars(car_id)
         ON DELETE SET NULL
