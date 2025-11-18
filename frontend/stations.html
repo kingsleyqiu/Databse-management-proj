@@ -8,15 +8,7 @@
 
 <h1>Manage Stations</h1>
 
-<nav>
-  <span><a href="index.html">Login/Register</a> |</span>
-  <span><a href="dashboard.html">Dashboard</a> |</span>
-  <span class="adminLimited"><a href="stations.html">Manage Stations</a> |</span>
-  <span><a href="reservations.html">Book Reservation</a> |</span>
-  <span><a href="sessions.html">Charging Sessions</a> |</span>
-  <span class="adminLimited"><a href="views.html">Reports</a> |</span>
-  <span><button id="logoutBtn" onclick="handleLogout()">Logout</button></span>
-</nav>
+<div id="navbar"></div>
 
 <h2>Add New Station</h2>
 <form id="stationForm">
@@ -66,6 +58,7 @@
 <div id="filteredCount"></div>
 
 <script src="api.js"></script>
+<script src="navbar.js"></script>
 <script src="stations.js"></script>
 </body>
 </html>
