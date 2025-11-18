@@ -37,9 +37,9 @@ async function runAdminScript() {
     );
     
     if (result.affectedRows === 0) {
-      console.log('⚠️  Warning: Admin user may not have been created or updated');
+      console.log('Warning: Admin user may not have been created or updated');
     } else {
-      console.log('✅ Admin user created successfully with hashed password!');
+      console.log('Admin user created successfully with hashed password!');
       console.log('Admin user details:');
       console.log('  - user_id: 0');
       console.log('  - email: admin@example.com');
