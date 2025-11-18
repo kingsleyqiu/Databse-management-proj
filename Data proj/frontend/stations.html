@@ -37,8 +37,32 @@
 <div id="formResult"></div>
 
 <h2>All Stations</h2>
+<div id="searchFilterSection">
+  <div>
+    <label>Search:</label>
+    <input type="text" id="searchInput" placeholder="Search by name, operator, or address..." oninput="filterStations()">
+  </div>
+  <div>
+    <label>Filter by Status:</label>
+    <select id="statusFilter" onchange="filterStations()">
+      <option value="">All Statuses</option>
+      <option value="Active">Active</option>
+      <option value="Maintenance">Maintenance</option>
+      <option value="Offline">Offline</option>
+    </select>
+  </div>
+  <div>
+    <label>Filter by Operator:</label>
+    <select id="operatorFilter" onchange="filterStations()">
+      <option value="">All Operators</option>
+      <!-- Options will be populated by JavaScript -->
+    </select>
+  </div>
+  <button onclick="clearFilters()">Clear Filters</button>
+</div>
 <button onclick="loadStations()">Refresh Stations</button>
 <div id="stationsList"></div>
+<div id="filteredCount"></div>
 
 <script src="api.js"></script>
 <script src="stations.js"></script>

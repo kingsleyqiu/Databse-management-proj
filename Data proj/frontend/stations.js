@@ -1,4 +1,6 @@
 // Stations management functionality
+let allStations = []; // Store all stations for filtering
+
 document.addEventListener('DOMContentLoaded', () => {
   loadStations();
   setupForm();
@@ -43,7 +45,7 @@ async function handleStationSubmit() {
     document.getElementById('stationId').value = '';
     document.getElementById('submitBtn').textContent = 'Add Station';
     document.getElementById('cancelBtn').style.display = 'none';
-    await loadStations();
+    await loadStations(); // This will reload and reapply filters
     
     setTimeout(() => {
       resultDiv.innerHTML = '';
@@ -56,35 +58,124 @@ async function handleStationSubmit() {
 
 async function loadStations() {
   try {
-    const stations = await getStations();
-    const container = document.getElementById('stationsList');
-    
-    if (stations.length === 0) {
-      container.innerHTML = '<p>No stations found</p>';
-      return;
-    }
-    
-    let html = '<table><tr><th>ID</th><th>Name</th><th>Operator</th><th>Address</th><th>Ports</th><th>Status</th><th>Actions</th></tr>';
-    stations.forEach(station => {
-      html += `<tr>
-        <td>${station.id}</td>
-        <td>${station.name}</td>
-        <td>${station.operator || 'N/A'}</td>
-        <td>${station.address}</td>
-        <td>${station.ports}</td>
-        <td>${station.status}</td>
-        <td>
-          <button onclick="editStation(${station.id})">Edit</button>
-          <button onclick="deleteStationConfirm(${station.id}, '${station.name}')">Delete</button>
-        </td>
-      </tr>`;
-    });
-    html += '</table>';
-    container.innerHTML = html;
+    allStations = await getStations();
+    populateOperatorFilter();
+    filterStations();
   } catch (error) {
     console.error('Error loading stations:', error);
     document.getElementById('stationsList').innerHTML = `<p>Error: ${error.message}</p>`;
   }
+}
+
+function populateOperatorFilter() {
+  const operatorFilter = document.getElementById('operatorFilter');
+  if (!operatorFilter) return;
+  
+  if (!allStations || allStations.length === 0) {
+    // Keep only "All Operators" if no stations
+    operatorFilter.innerHTML = '<option value="">All Operators</option>';
+    return;
+  }
+  
+  // Get all unique operators, filtering out null/undefined/empty values
+  const operators = [...new Set(allStations
+    .map(s => s.operator)
+    .filter(op => op && op !== null && op !== undefined && String(op).trim() !== ''))].sort();
+  
+  // Remove all existing options
+  while (operatorFilter.firstChild) {
+    operatorFilter.removeChild(operatorFilter.firstChild);
+  }
+  
+  // Add "All Operators" option
+  const allOption = document.createElement('option');
+  allOption.value = '';
+  allOption.textContent = 'All Operators';
+  operatorFilter.appendChild(allOption);
+  
+  // Add operator options
+  operators.forEach(operator => {
+    const option = document.createElement('option');
+    option.value = operator;
+    option.textContent = operator;
+    operatorFilter.appendChild(option);
+  });
+}
+
+function filterStations() {
+  const searchInput = document.getElementById('searchInput');
+  const statusFilter = document.getElementById('statusFilter');
+  const operatorFilter = document.getElementById('operatorFilter');
+  
+  if (!searchInput || !statusFilter || !operatorFilter) return;
+  
+  const searchTerm = searchInput.value.toLowerCase();
+  const statusValue = statusFilter.value;
+  const operatorValue = operatorFilter.value;
+  
+  let filtered = allStations.filter(station => {
+    // Search filter
+    const matchesSearch = !searchTerm || 
+      station.name.toLowerCase().includes(searchTerm) ||
+      (station.operator && station.operator.toLowerCase().includes(searchTerm)) ||
+      station.address.toLowerCase().includes(searchTerm);
+    
+    // Status filter
+    const matchesStatus = !statusValue || station.status === statusValue;
+    
+    // Operator filter - match exact operator (case-sensitive)
+    let matchesOperator = true;
+    if (operatorValue && operatorValue !== '') {
+      // If operator filter is selected, station must have that exact operator
+      matchesOperator = station.operator === operatorValue;
+    }
+    
+    return matchesSearch && matchesStatus && matchesOperator;
+  });
+  
+  displayStations(filtered);
+  
+  // Show filtered count
+  const countDiv = document.getElementById('filteredCount');
+  if (filtered.length !== allStations.length) {
+    countDiv.innerHTML = `<p>Showing ${filtered.length} of ${allStations.length} stations</p>`;
+  } else {
+    countDiv.innerHTML = `<p>Showing all ${allStations.length} stations</p>`;
+  }
+}
+
+function displayStations(stations) {
+  const container = document.getElementById('stationsList');
+  
+  if (stations.length === 0) {
+    container.innerHTML = '<p>No stations found matching your criteria</p>';
+    return;
+  }
+  
+  let html = '<table><tr><th>ID</th><th>Name</th><th>Operator</th><th>Address</th><th>Ports</th><th>Status</th><th>Actions</th></tr>';
+  stations.forEach(station => {
+    html += `<tr>
+      <td>${station.id}</td>
+      <td>${station.name}</td>
+      <td>${station.operator || 'N/A'}</td>
+      <td>${station.address}</td>
+      <td>${station.ports}</td>
+      <td>${station.status}</td>
+      <td>
+        <button onclick="editStation(${station.id})">Edit</button>
+        <button onclick="deleteStationConfirm(${station.id}, '${station.name}')">Delete</button>
+      </td>
+    </tr>`;
+  });
+  html += '</table>';
+  container.innerHTML = html;
+}
+
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('statusFilter').value = '';
+  document.getElementById('operatorFilter').value = '';
+  filterStations();
 }
 
 async function editStation(id) {
