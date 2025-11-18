@@ -92,6 +92,30 @@ document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
   }
 });
 
+// Logout handler function (also available in api.js, but included here for views.html)
+async function handleLogout() {
+  try {
+    const API_BASE = 'http://localhost:3000/api';
+    const response = await fetch(`${API_BASE}/login/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    // Clear localStorage
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userId');
+    
+    // Redirect to login page
+    window.location.href = 'index.html';
+  } catch (error) {
+    console.error('Logout error:', error);
+    // Even if API call fails, clear local storage and redirect
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userId');
+    window.location.href = 'index.html';
+  }
+}
+
 // ------------------- LOAD SQL VIEW -------------------
 document.getElementById("loadViewBtn")?.addEventListener("click", async () => {
   const view = document.getElementById("viewSelector").value;

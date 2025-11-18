@@ -142,3 +142,24 @@ async function deleteSession(id) {
     method: 'DELETE'
   });
 }
+
+// Logout handler function
+async function handleLogout() {
+  try {
+    // Call the logout API endpoint
+    await logoutUser();
+    
+    // Clear localStorage
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userId');
+    
+    // Redirect to login page
+    window.location.href = 'index.html';
+  } catch (error) {
+    console.error('Logout error:', error);
+    // Even if API call fails, clear local storage and redirect
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userId');
+    window.location.href = 'index.html';
+  }
+}
