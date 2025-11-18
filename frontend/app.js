@@ -61,7 +61,8 @@ document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
       return;
     }
 
-    if (!role || !userId) {
+    // Check for null/undefined explicitly (not falsy) since userId can be 0
+    if (role == null || userId == null) {
       // helpful error for debugging — backend didn't include expected fields
       document.getElementById("loginResult").innerText =
         "Login succeeded but server did not return user role or id. Check server response (see console).";

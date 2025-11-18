@@ -6,6 +6,9 @@ INSERT INTO Cars (make, model, battery_capacity_kwh, connector_type) VALUES
 ('Hyundai', 'Kona EV', 64.0, 'CCS'),
 ('Ford', 'Mustang Mach-E', 88.0, 'CCS');
 
+INSERT INTO Users (user_id, fname, lname, email, phone, password, role, car_id) VALUES
+(0, 'Admin', 'User', 'admin@example.com', '416-555-0000', 'admin123', 'admin', NULL);
+
 INSERT INTO Users (fname, lname, email, phone, car_id) VALUES
 ('Alice', 'Green', 'alice@example.com', '416-555-1001', 1),
 ('Bob', 'Smith', 'bob@example.com', '416-555-1002', 2),
