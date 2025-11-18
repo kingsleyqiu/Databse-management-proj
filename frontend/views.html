@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>EV Charging Views</title>
+  <link rel="stylesheet" href="css.css">
+</head>
+<body>
+
+<h1>SQL Report Views</h1>
+
+<nav>
+  <a href="index.html">Login/Register</a> |
+  <a href="dashboard.html">Dashboard</a> |
+  <a href="stations.html">Manage Stations</a> |
+  <a href="reservations.html">Book Reservation</a> |
+  <a href="sessions.html">Charging Sessions</a> |
+  <a href="views.html">Reports</a>
+</nav>
+
+</br>
+
+<select id="viewSelector">
+  <option value="session-details">Session Details</option>
+  <option value="max-avg-rate">Max Avg Operator Rate</option>
+  <option value="reservations-session">Reservations w/ Session</option>
+  <option value="pricing-full">Station Pricing Full</option>
+  <option value="resources">Available Resources</option>
+  <option value="station-util">Station Utilization</option>
+  <option value="user-total-paid">User Total Paid</option>
+  <option value="future-res-details">Future Reservations</option>
+  <option value="charger-status">Charger Status Summary</option>
+  <option value="session-cost-rate">Session Cost vs Rate</option>
+  <option value="user-compatible">User Compatible Chargers</option>
+  <option value="vacancy">Station Vacancy</option>
+  <option value="next-available">Next Available Time</option>
+  <option value="reliability">Station Reliability</option>
+</select>
+
+<button id="loadViewBtn">Load View</button>
+
+<div id="tableContainer"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

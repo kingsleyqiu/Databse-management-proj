@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>EV Charging Dashboard</title>
+  <link rel="stylesheet" href="css.css">
+</head>
+<body>
+
+<h1>EV Charging System</h1>
+
+<h2>Register User</h2>
+<form id="registerForm">
+  <input name="fname" placeholder="First Name" required>
+  <input name="lname" placeholder="Last Name" required>
+  <input name="email" placeholder="Email" required>
+  <input name="password" type="password" placeholder="Password" required>
+  <input name="phone" placeholder="Phone">
+  <button type="submit">Register</button>
+</form>
+<div id="registerResult"></div>
+
+<h2>Login</h2>
+<form id="loginForm">
+  <input name="email" placeholder="Email" required>
+  <input name="password" type="password" placeholder="Password" required>
+  <button type="submit">Login</button>
+</form>
+<div id="loginResult"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

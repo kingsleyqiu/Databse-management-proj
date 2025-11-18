@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Charging Sessions - EV Charging</title>
+  <link rel="stylesheet" href="css.css">
+</head>
+<body>
+
+<h1>Charging Sessions</h1>
+
+<nav>
+  <a href="index.html">Login/Register</a> |
+  <a href="dashboard.html">Dashboard</a> |
+  <a href="stations.html">Manage Stations</a> |
+  <a href="reservations.html">Book Reservation</a> |
+  <a href="sessions.html">Charging Sessions</a> |
+  <a href="views.html">Reports</a>
+</nav>
+
+<h2>Create/Edit Charging Session</h2>
+<form id="sessionForm">
+  <input type="hidden" id="sessionId" name="id">
+  <input type="number" name="user_id" placeholder="User ID" required>
+  <input type="number" name="charger_id" placeholder="Charger ID" required>
+  <input type="number" name="res_id" placeholder="Reservation ID (optional)">
+  <input type="datetime-local" id="startTime" name="startt" required>
+  <input type="datetime-local" id="endTime" name="endt" required>
+  <input type="number" step="0.01" name="energy_delivered_kwh" placeholder="Energy (kWh)" required>
+  <input type="number" step="0.01" name="cost" placeholder="Cost" required>
+  <select name="payment_stat">
+    <option value="Pending">Pending</option>
+    <option value="Paid">Paid</option>
+    <option value="Failed">Failed</option>
+  </select>
+  <button type="submit" id="submitBtn">Create Session</button>
+  <button type="button" id="cancelBtn" onclick="cancelEdit()" style="display:none;">Cancel</button>
+</form>
+<div id="formResult"></div>
+
+<h2>Session Details</h2>
+<button onclick="loadSessionDetails()">Refresh Sessions</button>
+<div id="sessionDetails"></div>
+
+<h2>Session Cost vs Rate Analysis</h2>
+<button onclick="loadSessionCostRate()">Refresh Analysis</button>
+<div id="sessionCostRate"></div>
+
+<script src="api.js"></script>
+<script src="sessions.js"></script>
+</body>
+</html>

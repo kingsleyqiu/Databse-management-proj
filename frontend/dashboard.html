@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>EV Charging Dashboard</title>
+  <link rel="stylesheet" href="css.css">
+</head>
+<body>
+
+<h1>EV Charging System Dashboard</h1>
+
+<div id="userInfo"></div>
+
+<nav>
+  <a href="index.html">Login/Register</a> |
+  <a href="dashboard.html">Dashboard</a> |
+  <a href="stations.html">Manage Stations</a> |
+  <a href="reservations.html">Book Reservation</a> |
+  <a href="sessions.html">Charging Sessions</a> |
+  <a href="views.html">Reports</a>
+</nav>
+
+<h2>Quick Stats</h2>
+<button onclick="loadStats()">Refresh Stats</button>
+<div id="stats">
+  <div>
+    <h3>Total Stations</h3>
+    <p id="totalStations">Loading...</p>
+  </div>
+  <div>
+    <h3>Active Stations</h3>
+    <p id="activeStations">Loading...</p>
+  </div>
+  <div>
+    <h3>Available Chargers</h3>
+    <p id="availableChargers">Loading...</p>
+  </div>
+  <div>
+    <h3>Total Sessions</h3>
+    <p id="totalSessions">Loading...</p>
+  </div>
+  <div>
+    <h3>Total Revenue</h3>
+    <p id="totalRevenue">Loading...</p>
+  </div>
+</div>
+
+<h2>Recent Stations</h2>
+<button onclick="loadRecentStations()">Refresh Stations</button>
+<div id="recentStations"></div>
+
+<h2>Station Utilization</h2>
+<div id="stationUtilization"></div>
+
+<h2>Charger Status Summary</h2>
+<div id="chargerStatusSummary"></div>
+
+<script src="api.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>
