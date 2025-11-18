@@ -25,7 +25,14 @@ document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
   });
 
   const data = await res.json();
-  document.getElementById("loginResult").innerText = JSON.stringify(data, null, 2);
+
+  // Redirect on ANY successful response
+  if (res.ok) {
+    window.location.href = "dashboard.html"; 
+  } else {
+    document.getElementById("loginResult").innerText =
+      data.message || "Login failed";
+  }
 });
 
 // ------------------- LOAD SQL VIEW -------------------
