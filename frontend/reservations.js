@@ -131,33 +131,141 @@ function validateStartTimeNotPast() {
   }
 }
 
-// Function to check for scheduling conflicts
+// Function to get station ID from charger ID
+async function getStationIdFromCharger(chargerId) {
+  try {
+    // Get all stations
+    const stations = await getStations();
+    
+    // Get future reservations detail view which has charger to station mapping
+    const futureResDetails = await getView('future-res-details');
+    const matchingReservation = futureResDetails.find(res => res.charger_id == chargerId);
+    
+    if (matchingReservation && matchingReservation.station_name) {
+      // Find station by name
+      const station = stations.find(s => s.name === matchingReservation.station_name);
+      if (station) return station.id;
+    }
+    
+    // Fallback: try to get from resources view or other sources
+    // For now, we'll need to get charger info another way
+    // This is a limitation - we may need a backend endpoint for this
+    return null;
+  } catch (error) {
+    console.error('Error getting station ID from charger:', error);
+    return null;
+  }
+}
+
+// Function to check for scheduling conflicts based on station port capacity
 async function checkSchedulingConflict(chargerId, startDateTime, endDateTime, excludeReservationId = null) {
   try {
-    // Get all reservations
+    // Get the station ID for this charger
+    const stationId = await getStationIdFromCharger(chargerId);
+    if (!stationId) {
+      // If we can't determine the station, fall back to charger-level checking
+      console.warn('Could not determine station for charger, using charger-level conflict check');
+      const allReservations = await getReservations();
+      const activeReservations = allReservations.filter(res => 
+        res.charger_id == chargerId && 
+        res.status !== 'Cancelled' && 
+        res.status !== 'Expired' &&
+        (excludeReservationId === null || res.res_id != excludeReservationId)
+      );
+      
+      for (const reservation of activeReservations) {
+        const existingStart = new Date(reservation.startt.replace(' ', 'T'));
+        const existingEnd = new Date(reservation.endt.replace(' ', 'T'));
+        if (startDateTime < existingEnd && endDateTime > existingStart) {
+          return {
+            hasConflict: true,
+            conflictingReservation: reservation
+          };
+        }
+      }
+      return { hasConflict: false };
+    }
+    
+    // Get station information to find port count
+    const stations = await getStations();
+    const station = stations.find(s => s.id == stationId);
+    if (!station) {
+      return { hasConflict: false }; // Can't find station, allow reservation
+    }
+    
+    const portCount = station.ports || 1;
+    
+    // Get all reservations and find which ones belong to this station
     const allReservations = await getReservations();
     
-    // Filter reservations for the same charger and active statuses (exclude Cancelled and Expired)
-    const activeReservations = allReservations.filter(res => 
-      res.charger_id == chargerId && 
-      res.status !== 'Cancelled' && 
-      res.status !== 'Expired' &&
-      (excludeReservationId === null || res.res_id != excludeReservationId)
-    );
+    // Get future reservations detail view to create charger-to-station mapping
+    const futureResDetails = await getView('future-res-details');
     
-    // Check for overlaps
-    for (const reservation of activeReservations) {
-      const existingStart = new Date(reservation.startt.replace(' ', 'T'));
-      const existingEnd = new Date(reservation.endt.replace(' ', 'T'));
-      
-      // Check if time ranges overlap
-      // Two ranges overlap if: newStart < existingEnd AND newEnd > existingStart
-      if (startDateTime < existingEnd && endDateTime > existingStart) {
-        return {
-          hasConflict: true,
-          conflictingReservation: reservation
-        };
+    // Create a map of charger_id to station_name (more reliable than reservation-to-station)
+    const chargerToStationMap = {};
+    futureResDetails.forEach(res => {
+      if (res.charger_id && res.station_name) {
+        chargerToStationMap[res.charger_id] = res.station_name;
       }
+    });
+    
+    // Also create reservation-to-station map for direct lookup
+    const resToStationMap = {};
+    futureResDetails.forEach(res => {
+      if (res.res_id && res.station_name) {
+        resToStationMap[res.res_id] = res.station_name;
+      }
+    });
+    
+    // Count active reservations for this station during the overlapping time period
+    let overlappingReservations = 0;
+    
+    for (const reservation of allReservations) {
+      // Skip cancelled/expired reservations
+      if (reservation.status === 'Cancelled' || reservation.status === 'Expired') {
+        continue;
+      }
+      
+      // Skip the reservation being edited
+      if (excludeReservationId && reservation.res_id == excludeReservationId) {
+        continue;
+      }
+      
+      // Check if this reservation belongs to the same station
+      let belongsToStation = false;
+      
+      // First, try direct reservation-to-station mapping
+      const reservationStationName = resToStationMap[reservation.res_id];
+      if (reservationStationName === station.name) {
+        belongsToStation = true;
+      }
+      
+      // If not found, try charger-to-station mapping
+      if (!belongsToStation && reservation.charger_id) {
+        const chargerStationName = chargerToStationMap[reservation.charger_id];
+        if (chargerStationName === station.name) {
+          belongsToStation = true;
+        }
+      }
+      
+      if (belongsToStation) {
+        const existingStart = new Date(reservation.startt.replace(' ', 'T'));
+        const existingEnd = new Date(reservation.endt.replace(' ', 'T'));
+        
+        // Check if time ranges overlap
+        if (startDateTime < existingEnd && endDateTime > existingStart) {
+          overlappingReservations++;
+        }
+      }
+    }
+    
+    // Check if adding this reservation would exceed port capacity
+    if (overlappingReservations >= portCount) {
+      return {
+        hasConflict: true,
+        portCount: portCount,
+        currentReservations: overlappingReservations
+      };
     }
     
     return { hasConflict: false };
@@ -416,12 +524,20 @@ function setupForm() {
     // Check for scheduling conflicts
     const conflictCheck = await checkSchedulingConflict(chargerId, startDate, endDate, reservationId || null);
     if (conflictCheck.hasConflict) {
-      const conflict = conflictCheck.conflictingReservation;
-      const conflictStart = new Date(conflict.startt.replace(' ', 'T'));
-      const conflictEnd = new Date(conflict.endt.replace(' ', 'T'));
-      const conflictStartStr = conflictStart.toLocaleString();
-      const conflictEndStr = conflictEnd.toLocaleString();
-      resultDiv.innerHTML = `<p style="color: red;">Error: Scheduling conflict detected. This charger is already reserved from ${conflictStartStr} to ${conflictEndStr}. Please select a different time slot.</p>`;
+      if (conflictCheck.portCount !== undefined) {
+        // Port capacity conflict
+        resultDiv.innerHTML = `<p style="color: red;">Error: Scheduling conflict detected. This station is at full capacity (${conflictCheck.currentReservations}/${conflictCheck.portCount} ports reserved during this time). Please select a different time slot or station.</p>`;
+      } else if (conflictCheck.conflictingReservation) {
+        // Specific reservation conflict (fallback)
+        const conflict = conflictCheck.conflictingReservation;
+        const conflictStart = new Date(conflict.startt.replace(' ', 'T'));
+        const conflictEnd = new Date(conflict.endt.replace(' ', 'T'));
+        const conflictStartStr = conflictStart.toLocaleString();
+        const conflictEndStr = conflictEnd.toLocaleString();
+        resultDiv.innerHTML = `<p style="color: red;">Error: Scheduling conflict detected. This charger is already reserved from ${conflictStartStr} to ${conflictEndStr}. Please select a different time slot.</p>`;
+      } else {
+        resultDiv.innerHTML = `<p style="color: red;">Error: Scheduling conflict detected. Please select a different time slot.</p>`;
+      }
       document.getElementById('startDate').focus();
       return;
     }
