@@ -14,18 +14,25 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("userInfo").innerHTML =
     `<p>Logged in as <b>${role}</b> (User ID: ${userId})</p>`;
 
-  // If its user, hides the tabs
-  if (role !== "admin") {
-  document.querySelectorAll(".adminLimited").forEach(span => {
-    span.style.display = "none"; // hides both link and the pipe
-    });
+  // Show appropriate dashboard based on role
+  if (role === "admin") {
+    document.getElementById("adminDashboard").style.display = "block";
+    document.getElementById("userDashboard").style.display = "none";
+    // Load admin dashboard data
+    loadStats();
+    loadRecentStations();
+    loadStationUtilization();
+    loadChargerStatusSummary();
+  } else {
+    document.getElementById("adminDashboard").style.display = "none";
+    document.getElementById("userDashboard").style.display = "block";
+    // Load user dashboard data
+    loadUserProfile();
+    loadUserStats();
+    loadUserUpcomingReservations();
+    loadUserRecentSessions();
+    loadAvailableStations();
   }
-
-  // Load dashboard data
-  loadStats();
-  loadRecentStations();
-  loadStationUtilization();
-  loadChargerStatusSummary();
 });
 
 async function loadStats() {
@@ -176,3 +183,455 @@ async function loadChargerStatusSummary() {
     document.getElementById('chargerStatusSummary').innerHTML = `<p>Error: ${errorMsg}</p>`;
   }
 }
+
+// ==================== USER DASHBOARD FUNCTIONS ====================
+
+async function loadUserStats() {
+  try {
+    const userId = localStorage.getItem("userId");
+    if (!userId) return;
+
+    // Get user's reservations
+    const allReservations = await getReservations();
+    const userReservations = allReservations.filter(r => r.user_id == userId);
+    const totalReservations = userReservations.length;
+    
+    // Get upcoming reservations (future reservations)
+    const now = new Date();
+    const upcomingReservations = userReservations.filter(r => {
+      const startDate = new Date(r.startt);
+      return startDate > now && r.status !== 'Cancelled';
+    });
+    
+    document.getElementById('totalReservations').textContent = totalReservations;
+    document.getElementById('upcomingReservations').textContent = upcomingReservations.length;
+    
+    // Get user's sessions
+    const allSessions = await getSessions();
+    const userSessions = allSessions.filter(s => s.user_id == userId);
+    const totalSessions = userSessions.length;
+    
+    // Calculate total spent and energy
+    const totalSpent = userSessions.reduce((sum, session) => {
+      return sum + (parseFloat(session.cost) || 0);
+    }, 0);
+    
+    const totalEnergy = userSessions.reduce((sum, session) => {
+      return sum + (parseFloat(session.energy_delivered_kwh) || 0);
+    }, 0);
+    
+    document.getElementById('userTotalSessions').textContent = totalSessions;
+    document.getElementById('totalSpent').textContent = '$' + totalSpent.toFixed(2);
+    document.getElementById('totalEnergy').textContent = totalEnergy.toFixed(2) + ' kWh';
+  } catch (error) {
+    console.error('Error loading user stats:', error);
+    const errorMsg = error.message || 'Error loading data';
+    document.getElementById('totalReservations').textContent = 'Error';
+    document.getElementById('upcomingReservations').textContent = 'Error';
+    document.getElementById('userTotalSessions').textContent = 'Error';
+    document.getElementById('totalSpent').textContent = 'Error';
+    document.getElementById('totalEnergy').textContent = 'Error';
+  }
+}
+
+async function loadUserUpcomingReservations() {
+  try {
+    const userId = localStorage.getItem("userId");
+    if (!userId) return;
+
+    // Get future reservations with details
+    const futureReservations = await getView('future-res-details');
+    const allReservations = await getReservations();
+    
+    // Filter to get user's reservation IDs
+    const userReservationIds = new Set(
+      allReservations
+        .filter(r => r.user_id == userId)
+        .map(r => r.res_id)
+    );
+    
+    const userFutureReservations = futureReservations.filter(res => 
+      userReservationIds.has(res.res_id)
+    );
+    
+    const container = document.getElementById('userUpcomingReservations');
+    
+    if (userFutureReservations.length === 0) {
+      container.innerHTML = '<p>No upcoming reservations found</p>';
+      return;
+    }
+    
+    let html = '<table><tr><th>Reservation ID</th><th>Station</th><th>Connector Type</th><th>Start Time</th><th>End Time</th><th>Status</th></tr>';
+    userFutureReservations.forEach(res => {
+      html += `<tr>
+        <td>${res.res_id}</td>
+        <td>${res.station_name || 'N/A'}</td>
+        <td>${res.connector_type || 'N/A'}</td>
+        <td>${formatDateTime(res.startt)}</td>
+        <td>${formatDateTime(res.endt)}</td>
+        <td>${res.status}</td>
+      </tr>`;
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  } catch (error) {
+    console.error('Error loading user upcoming reservations:', error);
+    const errorMsg = error.message || 'Error loading reservations';
+    document.getElementById('userUpcomingReservations').innerHTML = `<p>Error: ${errorMsg}</p>`;
+  }
+}
+
+async function loadUserRecentSessions() {
+  try {
+    const userId = localStorage.getItem("userId");
+    if (!userId) return;
+
+    // Get session details
+    const sessionDetails = await getView('session-details');
+    const userSessions = sessionDetails
+      .filter(s => s.user_id == userId)
+      .sort((a, b) => new Date(b.startt) - new Date(a.startt))
+      .slice(0, 10); // Get 10 most recent
+    
+    const container = document.getElementById('userRecentSessions');
+    
+    if (userSessions.length === 0) {
+      container.innerHTML = '<p>No charging sessions found</p>';
+      return;
+    }
+    
+    let html = '<table><tr><th>Session ID</th><th>Station</th><th>Start Time</th><th>End Time</th><th>Energy (kWh)</th><th>Cost</th><th>Payment Status</th></tr>';
+    userSessions.forEach(session => {
+      html += `<tr>
+        <td>${session.session_id}</td>
+        <td>${session.station_name || 'N/A'}</td>
+        <td>${formatDateTime(session.startt)}</td>
+        <td>${formatDateTime(session.endt)}</td>
+        <td>${parseFloat(session.energy_delivered_kwh || 0).toFixed(2)}</td>
+        <td>$${parseFloat(session.cost || 0).toFixed(2)}</td>
+        <td>${session.payment_stat || 'N/A'}</td>
+      </tr>`;
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  } catch (error) {
+    console.error('Error loading user recent sessions:', error);
+    const errorMsg = error.message || 'Error loading sessions';
+    document.getElementById('userRecentSessions').innerHTML = `<p>Error: ${errorMsg}</p>`;
+  }
+}
+
+async function loadAvailableStations() {
+  try {
+    const stations = await getStations();
+    const activeStations = stations.filter(s => s.status === 'Active');
+    
+    const container = document.getElementById('availableStations');
+    
+    if (activeStations.length === 0) {
+      container.innerHTML = '<p>No available stations found</p>';
+      return;
+    }
+    
+    // Get charger status to show available chargers per station
+    let chargerStatus = [];
+    try {
+      chargerStatus = await getView('charger-status');
+    } catch (error) {
+      console.error('Error loading charger status:', error);
+    }
+    
+    let html = '<table><tr><th>Station ID</th><th>Name</th><th>Operator</th><th>Address</th><th>Available Chargers</th></tr>';
+    activeStations.forEach(station => {
+      const status = chargerStatus.find(cs => cs.station_id == station.id);
+      const available = status ? (status.available || 0) : 'N/A';
+      
+      html += `<tr>
+        <td>${station.id}</td>
+        <td>${station.name}</td>
+        <td>${station.operator || 'N/A'}</td>
+        <td>${station.address}</td>
+        <td>${available}</td>
+      </tr>`;
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  } catch (error) {
+    console.error('Error loading available stations:', error);
+    const errorMsg = error.message || 'Error loading stations';
+    document.getElementById('availableStations').innerHTML = `<p>Error: ${errorMsg}</p>`;
+  }
+}
+
+function formatDateTime(dateTimeString) {
+  if (!dateTimeString) return 'N/A';
+  const date = new Date(dateTimeString);
+  return date.toLocaleString();
+}
+
+// ==================== USER PROFILE FUNCTIONS ====================
+
+async function loadUserProfile() {
+  try {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      document.getElementById('userProfileDisplay').innerHTML = 
+        `<p style="color: red;">Error: User ID not found. Please log in again.</p>`;
+      return;
+    }
+
+    console.log('Loading user profile for userId:', userId);
+    const userData = await getUser(userId);
+    console.log('User data received:', userData);
+    displayUserProfile(userData);
+    await loadCarsForDropdown();
+  } catch (error) {
+    console.error('Error loading user profile:', error);
+    document.getElementById('userProfileDisplay').innerHTML = 
+      `<p style="color: red;">Error loading profile: ${error.message}</p>`;
+  }
+}
+
+// Store current user data globally for edit function
+let currentUserData = null;
+
+// Store cars data globally for make/model filtering
+let allCarsData = [];
+let carDropdownsInitialized = false;
+
+function displayUserProfile(userData) {
+  currentUserData = userData; // Store for edit function
+  const container = document.getElementById('userProfileDisplay');
+  
+  const carInfo = userData.car 
+    ? `${userData.car.make} ${userData.car.model} (${userData.car.connector_type})`
+    : 'No car selected';
+  
+  container.innerHTML = `
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+      <div>
+        <p><strong>Name:</strong> ${userData.fname} ${userData.lname}</p>
+        <p><strong>Email:</strong> ${userData.email}</p>
+        <p><strong>Phone:</strong> ${userData.phone || 'Not provided'}</p>
+      </div>
+      <div>
+        <p><strong>Car:</strong> ${carInfo}</p>
+        <p><strong>User ID:</strong> ${userData.user_id}</p>
+        <p><strong>Role:</strong> ${userData.role}</p>
+      </div>
+    </div>
+    <button onclick="startEditUserProfile()">Edit Profile</button>
+  `;
+}
+
+async function startEditUserProfile() {
+  if (!currentUserData) {
+    // Reload user data if not available
+    const userId = localStorage.getItem("userId");
+    if (userId) {
+      currentUserData = await getUser(userId);
+    } else {
+      alert('User data not available. Please refresh the page.');
+      return;
+    }
+  }
+  
+  // Populate edit form
+  document.getElementById('editFname').value = currentUserData.fname || '';
+  document.getElementById('editLname').value = currentUserData.lname || '';
+  document.getElementById('editEmail').value = currentUserData.email || '';
+  document.getElementById('editPhone').value = currentUserData.phone || '';
+  
+  // Load cars for dropdown if not already loaded
+  await loadCarsForDropdown();
+  
+  // If user has a car, set the make and model
+  if (currentUserData.car_id && currentUserData.car) {
+    const makeSelect = document.getElementById('editCarMake');
+    const modelSelect = document.getElementById('editCarModel');
+    const connectorTypeInput = document.getElementById('editConnectorType');
+    const carIdInput = document.getElementById('editCarId');
+    
+    makeSelect.value = currentUserData.car.make || '';
+    if (currentUserData.car.make) {
+      updateModelDropdown(currentUserData.car.make);
+      // Wait a moment for model dropdown to populate, then set model
+      setTimeout(() => {
+        modelSelect.value = currentUserData.car.model || '';
+        if (currentUserData.car.model) {
+          updateConnectorType(currentUserData.car.make, currentUserData.car.model);
+        }
+      }, 100);
+    }
+  } else {
+    // Clear car selection
+    document.getElementById('editCarMake').value = '';
+    document.getElementById('editCarModel').value = '';
+    document.getElementById('editConnectorType').value = '';
+    document.getElementById('editCarId').value = '';
+  }
+  
+  // Show edit form, hide display
+  document.getElementById('userProfileDisplay').style.display = 'none';
+  document.getElementById('userProfileEdit').style.display = 'block';
+}
+
+async function loadCarsForDropdown() {
+  try {
+    const cars = await getCars();
+    allCarsData = cars; // Store for filtering
+    
+    const makeSelect = document.getElementById('editCarMake');
+    const modelSelect = document.getElementById('editCarModel');
+    
+    if (!makeSelect || !modelSelect) {
+      console.error('Car dropdown elements not found');
+      return;
+    }
+    
+    // Clear existing options except the first one
+    while (makeSelect.options.length > 1) {
+      makeSelect.remove(1);
+    }
+    while (modelSelect.options.length > 1) {
+      modelSelect.remove(1);
+    }
+    
+    // Get unique makes and populate make dropdown
+    const uniqueMakes = [...new Set(cars.map(car => car.make))].sort();
+    uniqueMakes.forEach(make => {
+      const option = document.createElement('option');
+      option.value = make;
+      option.textContent = make;
+      makeSelect.appendChild(option);
+    });
+    
+    // Set up event listeners only once
+    if (!carDropdownsInitialized) {
+      // Add event listener for make selection
+      makeSelect.addEventListener('change', function() {
+        updateModelDropdown(this.value);
+        // Clear model and connector type when make changes
+        const modelSelect = document.getElementById('editCarModel');
+        modelSelect.value = '';
+        document.getElementById('editConnectorType').value = '';
+        document.getElementById('editCarId').value = '';
+      });
+      
+      // Add event listener for model selection
+      modelSelect.addEventListener('change', function() {
+        const makeSelect = document.getElementById('editCarMake');
+        updateConnectorType(makeSelect.value, this.value);
+      });
+      
+      carDropdownsInitialized = true;
+    }
+    
+  } catch (error) {
+    console.error('Error loading cars:', error);
+  }
+}
+
+function updateModelDropdown(selectedMake) {
+  const modelSelect = document.getElementById('editCarModel');
+  const connectorTypeInput = document.getElementById('editConnectorType');
+  const carIdInput = document.getElementById('editCarId');
+  
+  // Clear existing options except the first one
+  while (modelSelect.options.length > 1) {
+    modelSelect.remove(1);
+  }
+  
+  // Clear connector type and car_id
+  connectorTypeInput.value = '';
+  carIdInput.value = '';
+  
+  if (!selectedMake) {
+    return;
+  }
+  
+  // Filter models by selected make
+  const modelsForMake = allCarsData
+    .filter(car => car.make === selectedMake)
+    .map(car => car.model)
+    .filter((model, index, self) => self.indexOf(model) === index) // Get unique models
+    .sort();
+  
+  // Populate model dropdown
+  modelsForMake.forEach(model => {
+    const option = document.createElement('option');
+    option.value = model;
+    option.textContent = model;
+    modelSelect.appendChild(option);
+  });
+}
+
+function updateConnectorType(selectedMake, selectedModel) {
+  const connectorTypeInput = document.getElementById('editConnectorType');
+  const carIdInput = document.getElementById('editCarId');
+  
+  if (!selectedMake || !selectedModel) {
+    connectorTypeInput.value = '';
+    carIdInput.value = '';
+    return;
+  }
+  
+  // Find the car matching make and model
+  const selectedCar = allCarsData.find(
+    car => car.make === selectedMake && car.model === selectedModel
+  );
+  
+  if (selectedCar) {
+    connectorTypeInput.value = selectedCar.connector_type;
+    carIdInput.value = selectedCar.car_id;
+  } else {
+    connectorTypeInput.value = '';
+    carIdInput.value = '';
+  }
+}
+
+function cancelEditProfile() {
+  document.getElementById('userProfileEdit').style.display = 'none';
+  document.getElementById('userProfileDisplay').style.display = 'block';
+  document.getElementById('profileEditResult').innerHTML = '';
+  loadUserProfile(); // Reload to refresh display
+}
+
+// Handle profile form submission
+document.addEventListener('DOMContentLoaded', () => {
+  const profileForm = document.getElementById('userProfileForm');
+  if (profileForm) {
+    profileForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        alert('User ID not found. Please log in again.');
+        return;
+      }
+      
+      const formData = {
+        fname: document.getElementById('editFname').value,
+        lname: document.getElementById('editLname').value,
+        email: document.getElementById('editEmail').value,
+        phone: document.getElementById('editPhone').value,
+        car_id: document.getElementById('editCarId').value || null
+      };
+      
+      const resultDiv = document.getElementById('profileEditResult');
+      
+      try {
+        const updatedUser = await updateUser(userId, formData);
+        resultDiv.innerHTML = '<p style="color: green;">Profile updated successfully!</p>';
+        
+        // Reload profile display after a short delay
+        setTimeout(() => {
+          cancelEditProfile();
+        }, 1500);
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+      }
+    });
+  }
+});

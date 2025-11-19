@@ -35,7 +35,15 @@ sequelize.authenticate()
 
 // Routes
 const userRoutes = require('./routes/userRoutes');
+
+// Debug middleware to log all /api/users requests
+app.use('/api/users', (req, res, next) => {
+  console.log(`[DEBUG] Request to /api/users${req.path} - Method: ${req.method}`);
+  next();
+});
+
 app.use('/api/users', userRoutes);
+console.log('User routes registered at /api/users');
 
 const loginRoutes = require('./routes/loginRoutes');
 app.use('/api/login', loginRoutes);
@@ -54,6 +62,9 @@ app.use('/api/sessions', sessionRoutes);
 
 const reservationRoutes = require('./routes/reservationRoutes');
 app.use('/api/reservations', reservationRoutes);
+
+const carRoutes = require('./routes/carRoutes');
+app.use('/api/cars', carRoutes);
 
 // Serve static files from frontend directory (after API routes)
 app.use(express.static(path.join(__dirname, 'frontend')));

@@ -12,40 +12,124 @@
 
 <div id="navbar"></div>
 
-<h2>Quick Stats</h2>
-<button onclick="loadStats()">Refresh Stats</button>
-<div id="stats">
-  <div>
-    <h3>Total Stations</h3>
-    <p id="totalStations">Loading...</p>
+<!-- Admin Dashboard -->
+<div id="adminDashboard" style="display: none;">
+  <h2>Quick Stats</h2>
+  <button onclick="loadStats()">Refresh Stats</button>
+  <div id="stats">
+    <div>
+      <h3>Total Stations</h3>
+      <p id="totalStations">Loading...</p>
+    </div>
+    <div>
+      <h3>Active Stations</h3>
+      <p id="activeStations">Loading...</p>
+    </div>
+    <div>
+      <h3>Available Chargers</h3>
+      <p id="availableChargers">Loading...</p>
+    </div>
+    <div>
+      <h3>Total Sessions</h3>
+      <p id="totalSessions">Loading...</p>
+    </div>
+    <div>
+      <h3>Total Revenue</h3>
+      <p id="totalRevenue">Loading...</p>
+    </div>
   </div>
-  <div>
-    <h3>Active Stations</h3>
-    <p id="activeStations">Loading...</p>
-  </div>
-  <div>
-    <h3>Available Chargers</h3>
-    <p id="availableChargers">Loading...</p>
-  </div>
-  <div>
-    <h3>Total Sessions</h3>
-    <p id="totalSessions">Loading...</p>
-  </div>
-  <div>
-    <h3>Total Revenue</h3>
-    <p id="totalRevenue">Loading...</p>
-  </div>
+
+  <h2>Recent Stations</h2>
+  <button onclick="loadRecentStations()">Refresh Stations</button>
+  <div id="recentStations"></div>
+
+  <h2>Station Utilization</h2>
+  <div id="stationUtilization"></div>
+
+  <h2>Charger Status Summary</h2>
+  <div id="chargerStatusSummary"></div>
 </div>
 
-<h2>Recent Stations</h2>
-<button onclick="loadRecentStations()">Refresh Stations</button>
-<div id="recentStations"></div>
+<!-- User Dashboard -->
+<div id="userDashboard" style="display: none;">
+  <h2>My Profile</h2>
+  <div id="userProfileSection" style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <div id="userProfileDisplay">
+      <p><strong>Loading user information...</strong></p>
+    </div>
+    <div id="userProfileEdit" style="display: none;">
+      <form id="userProfileForm">
+        <label>First Name:</label>
+        <input type="text" id="editFname" name="fname" required>
+        
+        <label>Last Name:</label>
+        <input type="text" id="editLname" name="lname" required>
+        
+        <label>Email:</label>
+        <input type="email" id="editEmail" name="email" required>
+        
+        <label>Phone:</label>
+        <input type="text" id="editPhone" name="phone">
+        
+        <label>Car Make:</label>
+        <select id="editCarMake" name="car_make">
+          <option value="">Select Make</option>
+        </select>
+        
+        <label>Car Model:</label>
+        <select id="editCarModel" name="car_model">
+          <option value="">Select Model</option>
+        </select>
+        
+        <label>Connector Type:</label>
+        <input type="text" id="editConnectorType" name="connector_type" readonly style="background-color: #f0f0f0;">
+        
+        <input type="hidden" id="editCarId" name="car_id">
+        
+        <button type="submit">Save Changes</button>
+        <button type="button" onclick="cancelEditProfile()">Cancel</button>
+      </form>
+      <div id="profileEditResult"></div>
+    </div>
+  </div>
 
-<h2>Station Utilization</h2>
-<div id="stationUtilization"></div>
+  <h2>My Quick Stats</h2>
+  <button onclick="loadUserStats()">Refresh Stats</button>
+  <div id="userStats">
+    <div>
+      <h3>Total Reservations</h3>
+      <p id="totalReservations">Loading...</p>
+    </div>
+    <div>
+      <h3>Upcoming Reservations</h3>
+      <p id="upcomingReservations">Loading...</p>
+    </div>
+    <div>
+      <h3>Total Sessions</h3>
+      <p id="userTotalSessions">Loading...</p>
+    </div>
+    <div>
+      <h3>Total Spent</h3>
+      <p id="totalSpent">Loading...</p>
+    </div>
+    <div>
+      <h3>Energy Delivered</h3>
+      <p id="totalEnergy">Loading...</p>
+    </div>
+  </div>
 
-<h2>Charger Status Summary</h2>
-<div id="chargerStatusSummary"></div>
+  <h2>My Upcoming Reservations</h2>
+  <button onclick="loadUserUpcomingReservations()">Refresh Reservations</button>
+  <div id="userUpcomingReservations"></div>
+
+  <h2>My Recent Charging Sessions</h2>
+  <button onclick="loadUserRecentSessions()">Refresh Sessions</button>
+  <div id="userRecentSessions"></div>
+
+  <h2>Available Stations</h2>
+  <button onclick="loadAvailableStations()">Refresh Stations</button>
+  <div id="availableStations"></div>
+</div>
 
 <script src="api.js"></script>
 <script src="navbar.js"></script>

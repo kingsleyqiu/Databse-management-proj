@@ -11,7 +11,19 @@ async function fetchAPI(endpoint, options = {}) {
       }
     });
     
-    const data = await response.json();
+    // Get response as text first to check if it's JSON
+    const text = await response.text();
+    let data;
+    
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      // If parsing fails, it's not JSON - likely an HTML error page
+      const errorMsg = response.ok 
+        ? `Server returned non-JSON response: ${text.substring(0, 100)}`
+        : `Server error (${response.status}): ${text.substring(0, 100)}`;
+      throw new Error(errorMsg);
+    }
     
     if (!response.ok) {
       const errorMsg = data.error || data.message || `API error: ${response.status}`;
@@ -62,6 +74,22 @@ async function deleteStation(id) {
 // User API functions
 async function getUsers() {
   return fetchAPI('/users');
+}
+
+async function getUser(id) {
+  return fetchAPI(`/users/${id}`);
+}
+
+async function updateUser(id, data) {
+  return fetchAPI(`/users/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+// Car API functions
+async function getCars() {
+  return fetchAPI('/cars');
 }
 
 // Login API functions
