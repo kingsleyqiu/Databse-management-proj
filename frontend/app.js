@@ -61,7 +61,8 @@ document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
       return;
     }
 
-    if (!role || !userId) {
+    // Check for null/undefined explicitly (not falsy) since userId can be 0
+    if (role == null || userId == null) {
       // helpful error for debugging — backend didn't include expected fields
       document.getElementById("loginResult").innerText =
         "Login succeeded but server did not return user role or id. Check server response (see console).";
@@ -90,6 +91,30 @@ document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
     document.getElementById("loginResult").innerText = 'Login failed (network or server error)';
   }
 });
+
+// Logout handler function (also available in api.js, but included here for views.html)
+async function handleLogout() {
+  try {
+    const API_BASE = 'http://localhost:3000/api';
+    const response = await fetch(`${API_BASE}/login/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    // Clear localStorage
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userId');
+    
+    // Redirect to login page
+    window.location.href = 'index.html';
+  } catch (error) {
+    console.error('Logout error:', error);
+    // Even if API call fails, clear local storage and redirect
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userId');
+    window.location.href = 'index.html';
+  }
+}
 
 // ------------------- LOAD SQL VIEW -------------------
 document.getElementById("loadViewBtn")?.addEventListener("click", async () => {
