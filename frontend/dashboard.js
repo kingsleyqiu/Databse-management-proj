@@ -250,9 +250,16 @@ async function loadUserUpcomingReservations() {
         .map(r => r.res_id)
     );
     
-    const userFutureReservations = futureReservations.filter(res => 
+    let userFutureReservations = futureReservations.filter(res => 
       userReservationIds.has(res.res_id)
     );
+    
+    // Sort by start time to get the earliest upcoming reservation first
+    userFutureReservations.sort((a, b) => {
+      const dateA = new Date(a.startt);
+      const dateB = new Date(b.startt);
+      return dateA - dateB;
+    });
     
     const container = document.getElementById('userUpcomingReservations');
     
@@ -261,23 +268,61 @@ async function loadUserUpcomingReservations() {
       return;
     }
     
-    let html = '<table><tr><th>Reservation ID</th><th>Station</th><th>Connector Type</th><th>Start Time</th><th>End Time</th><th>Status</th></tr>';
-    userFutureReservations.forEach(res => {
-      html += `<tr>
-        <td>${res.res_id}</td>
-        <td>${res.station_name || 'N/A'}</td>
-        <td>${res.connector_type || 'N/A'}</td>
-        <td>${formatDateTime(res.startt)}</td>
-        <td>${formatDateTime(res.endt)}</td>
-        <td>${res.status}</td>
-      </tr>`;
-    });
+    // Only show the first (earliest) upcoming reservation
+    const firstReservation = userFutureReservations[0];
+    
+    let html = '<table><tr><th>Reservation ID</th><th>Station</th><th>Connector Type</th><th>Start Time</th><th>End Time</th><th>Status</th><th>Actions</th></tr>';
+    html += `<tr>
+      <td>${firstReservation.res_id}</td>
+      <td>${firstReservation.station_name || 'N/A'}</td>
+      <td>${firstReservation.connector_type || 'N/A'}</td>
+      <td>${formatDateTime(firstReservation.startt)}</td>
+      <td>${formatDateTime(firstReservation.endt)}</td>
+      <td>${firstReservation.status}</td>
+      <td>`;
+    
+    // Only show Complete button if status is not already Completed
+    if (firstReservation.status !== 'Completed') {
+      html += `<button onclick="markReservationComplete(${firstReservation.res_id})" class="inline-btn">Mark as Complete</button>`;
+    } else {
+      html += '<span style="color: green;">Completed</span>';
+    }
+    
+    html += `</td></tr>`;
     html += '</table>';
     container.innerHTML = html;
   } catch (error) {
     console.error('Error loading user upcoming reservations:', error);
     const errorMsg = error.message || 'Error loading reservations';
     document.getElementById('userUpcomingReservations').innerHTML = `<p>Error: ${errorMsg}</p>`;
+  }
+}
+
+// Function to mark a reservation as complete
+async function markReservationComplete(reservationId) {
+  if (!confirm('Are you sure you want to mark this reservation as complete?')) {
+    return;
+  }
+  
+  try {
+    // Get the current reservation to preserve other fields
+    const reservation = await getReservation(reservationId);
+    
+    // Update the reservation status to Completed
+    await updateReservation(reservationId, {
+      ...reservation,
+      status: 'Completed'
+    });
+    
+    alert('Reservation marked as complete successfully!');
+    
+    // Reload the upcoming reservations to reflect the change
+    await loadUserUpcomingReservations();
+    // Also reload user stats to update the count
+    await loadUserStats();
+  } catch (error) {
+    console.error('Error marking reservation as complete:', error);
+    alert('Error marking reservation as complete: ' + error.message);
   }
 }
 
