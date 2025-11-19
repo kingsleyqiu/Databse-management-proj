@@ -82,7 +82,6 @@ document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
     if (role === "admin") {
       window.location.href = "dashboard.html";
     } else {
-      // if you don't have user-home.html yet, change this to dashboard.html or index.html
       window.location.href = "dashboard.html";
     }
 
