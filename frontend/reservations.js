@@ -74,6 +74,63 @@ function updateDateTimeField(prefix) {
   }
 }
 
+// Function to validate that end time is after start time
+function validateEndTimeAfterStart() {
+  const startDateValue = document.getElementById('startDate').value;
+  const startTimeValue = document.getElementById('startTimeSelect').value;
+  const endDateValue = document.getElementById('endDate').value;
+  const endTimeValue = document.getElementById('endTimeSelect').value;
+  
+  if (!startDateValue || !startTimeValue || !endDateValue || !endTimeValue) {
+    // Clear any previous validation errors if fields aren't complete
+    const endTimeSelect = document.getElementById('endTimeSelect');
+    endTimeSelect.setCustomValidity('');
+    return true; // Can't validate if fields aren't complete
+  }
+  
+  const startDateTime = new Date(`${startDateValue}T${startTimeValue}:00`);
+  const endDateTime = new Date(`${endDateValue}T${endTimeValue}:00`);
+  
+  // Allow same day - only check that end time is after start time
+  if (endDateTime <= startDateTime) {
+    const endTimeSelect = document.getElementById('endTimeSelect');
+    if (startDateValue === endDateValue) {
+      endTimeSelect.setCustomValidity('End time must be after start time on the same day');
+    } else {
+      endTimeSelect.setCustomValidity('End time must be after start time');
+    }
+    return false;
+  } else {
+    const endTimeSelect = document.getElementById('endTimeSelect');
+    endTimeSelect.setCustomValidity('');
+    return true;
+  }
+}
+
+// Function to validate that start time is not in the past
+function validateStartTimeNotPast() {
+  const startDateValue = document.getElementById('startDate').value;
+  const startTimeValue = document.getElementById('startTimeSelect').value;
+  
+  if (!startDateValue || !startTimeValue) {
+    return true; // Can't validate if fields aren't complete
+  }
+  
+  const startDateTime = new Date(`${startDateValue}T${startTimeValue}:00`);
+  const now = new Date();
+  
+  // Allow a small buffer (1 minute) to account for timing differences
+  if (startDateTime < now) {
+    const startTimeSelect = document.getElementById('startTimeSelect');
+    startTimeSelect.setCustomValidity('Start time cannot be in the past');
+    return false;
+  } else {
+    const startTimeSelect = document.getElementById('startTimeSelect');
+    startTimeSelect.setCustomValidity('');
+    return true;
+  }
+}
+
 // Reservations functionality
 document.addEventListener('DOMContentLoaded', () => {
   // Check if user is logged in
@@ -107,16 +164,48 @@ document.addEventListener('DOMContentLoaded', () => {
   // Populate time select dropdowns with 30-minute increments
   populateTimeSelects();
   
-  // Setup event listeners to update hidden datetime fields
+  // Set minimum date to today to prevent past dates (use local date, not UTC)
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const startDateInput = document.getElementById('startDate');
-  const startTimeSelect = document.getElementById('startTimeSelect');
   const endDateInput = document.getElementById('endDate');
+  startDateInput.setAttribute('min', today);
+  endDateInput.setAttribute('min', today);
+  
+  // Setup event listeners to update hidden datetime fields
+  const startTimeSelect = document.getElementById('startTimeSelect');
   const endTimeSelect = document.getElementById('endTimeSelect');
   
-  startDateInput.addEventListener('change', () => updateDateTimeField('start'));
-  startTimeSelect.addEventListener('change', () => updateDateTimeField('start'));
-  endDateInput.addEventListener('change', () => updateDateTimeField('end'));
-  endTimeSelect.addEventListener('change', () => updateDateTimeField('end'));
+  startDateInput.addEventListener('change', () => {
+    updateDateTimeField('start');
+    validateStartTimeNotPast();
+    // Update end date minimum to be at least the start date
+    if (startDateInput.value) {
+      endDateInput.setAttribute('min', startDateInput.value);
+      // If end date is before start date, clear it
+      if (endDateInput.value && endDateInput.value < startDateInput.value) {
+        endDateInput.value = '';
+        endTimeSelect.value = '';
+        updateDateTimeField('end');
+      }
+    }
+  });
+  
+  startTimeSelect.addEventListener('change', () => {
+    updateDateTimeField('start');
+    validateStartTimeNotPast();
+    validateEndTimeAfterStart();
+  });
+  
+  endDateInput.addEventListener('change', () => {
+    updateDateTimeField('end');
+    validateEndTimeAfterStart();
+  });
+  
+  endTimeSelect.addEventListener('change', () => {
+    updateDateTimeField('end');
+    validateEndTimeAfterStart();
+  });
   
   loadFutureReservations();
   loadAllReservations();
@@ -250,6 +339,27 @@ function setupForm() {
     if (isNaN(endDate.getTime())) {
       resultDiv.innerHTML = '<p style="color: red;">Error: Invalid end time. Please select a valid date and time.</p>';
       document.getElementById('endDate').focus();
+      return;
+    }
+    
+    // Validate that start time is not in the past
+    const now = new Date();
+    if (startDate < now) {
+      resultDiv.innerHTML = '<p style="color: red;">Error: Start time cannot be in the past. Please select a future date and time.</p>';
+      document.getElementById('startDate').focus();
+      return;
+    }
+    
+    // Validate that end time is after start time (allows same day with later time)
+    if (endDate <= startDate) {
+      resultDiv.innerHTML = '<p style="color: red;">Error: End time must be after start time. Please select a later end time.</p>';
+      // Focus on the appropriate field
+      if (endDateValue === startDateValue) {
+        // Same day, so focus on end time
+        document.getElementById('endTimeSelect').focus();
+      } else {
+        document.getElementById('endDate').focus();
+      }
       return;
     }
     
