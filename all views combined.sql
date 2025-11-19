@@ -3,6 +3,7 @@ USE ev_charging;
 CREATE OR REPLACE VIEW v_session_details AS
 SELECT
   cs.session_id,
+  cs.res_id,
   u.user_id, u.fname, u.lname,
   ca.make, ca.model,
   s.id AS station_id, s.name AS station_name,
@@ -109,7 +110,7 @@ GROUP BY u.user_id, u.fname, u.lname;
 
 CREATE OR REPLACE VIEW v_future_reservations_detail AS
 SELECT
-  r.res_id, r.startt, r.endt, r.status,
+  r.res_id, r.user_id, r.charger_id, r.startt, r.endt, r.status,
   u.fname, u.lname,
   s.name AS station_name,
   c.connector_type
@@ -143,27 +144,22 @@ JOIN Charger c ON c.id = cs.charger_id
 JOIN Station s ON s.id = c.station_id
 LEFT JOIN Pricing p ON p.station_id = s.id;
 
-CREATE 
-    ALGORITHM = UNDEFINED 
-    DEFINER = `root`@`localhost` 
-    SQL SECURITY DEFINER
-VIEW `ev_charging`.`v_user_compatible_chargers` AS
-    SELECT 
-        `u`.`user_id` AS `user_id`,
-        `u`.`fname` AS `fname`,
-        `u`.`lname` AS `lname`,
-        `c`.`id` AS `charger_id`,
-        `s`.`name` AS `station_name`,
-        `c`.`connector_type` AS `connector_type`,
-        `c`.`charging_speed_kw` AS `charging_speed_kw`,
-        `c`.`status` AS `status`
-    FROM
-        (((`ev_charging`.`users` `u`
-        JOIN `ev_charging`.`cars` `ca` ON ((`ca`.`car_id` = `u`.`car_id`)))
-        JOIN `ev_charging`.`charger` `c` ON ((`c`.`connector_type` = `ca`.`connector_type`)))
-        JOIN `ev_charging`.`station` `s` ON ((`s`.`id` = `c`.`station_id`)))
-    WHERE
-        (`s`.`status` = 'Active');
+CREATE OR REPLACE VIEW v_user_compatible_chargers AS
+SELECT 
+    u.user_id,
+    u.fname,
+    u.lname,
+    c.id AS charger_id,
+    s.id AS station_id,
+    s.name AS station_name,
+    c.connector_type,
+    c.charging_speed_kw,
+    c.status
+FROM Users u
+JOIN Cars ca ON ca.car_id = u.car_id
+JOIN Charger c ON c.connector_type = ca.connector_type
+JOIN Station s ON s.id = c.station_id
+WHERE s.status = 'Active';
 	
    CREATE OR REPLACE VIEW v_station_vacancy AS
 SELECT s.id AS station_id, s.name,

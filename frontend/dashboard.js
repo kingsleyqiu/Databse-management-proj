@@ -1,5 +1,5 @@
 // ---------------------- AUTH CHECK ----------------------
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const role = localStorage.getItem("userRole");
   const userId = localStorage.getItem("userId");
 
@@ -14,6 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("userInfo").innerHTML =
     `<p>Logged in as <b>${role}</b> (User ID: ${userId})</p>`;
 
+  // Check and expire reservations that have passed their end time
+  const expiredCount = await checkAndExpireReservations();
+  
   // Show appropriate dashboard based on role
   if (role === "admin") {
     document.getElementById("adminDashboard").style.display = "block";
@@ -34,6 +37,42 @@ document.addEventListener("DOMContentLoaded", () => {
     loadAvailableStations();
   }
 });
+
+// Function to check and expire reservations that have passed their end time
+async function checkAndExpireReservations() {
+  try {
+    const now = new Date();
+    const allReservations = await getReservations();
+    
+    // Find reservations that should be expired (end time has passed, status is still Reserved)
+    const expiredReservations = allReservations.filter(res => {
+      if (res.status !== 'Reserved') return false; // Only check Reserved reservations
+      
+      const endDate = new Date(res.endt.replace(' ', 'T'));
+      return endDate < now; // End time has passed
+    });
+    
+    // Update each expired reservation
+    for (const reservation of expiredReservations) {
+      try {
+        await updateReservation(reservation.res_id, {
+          ...reservation,
+          status: 'Expired'
+        });
+        console.log(`Reservation ${reservation.res_id} has been expired`);
+      } catch (error) {
+        console.error(`Error expiring reservation ${reservation.res_id}:`, error);
+      }
+    }
+    
+    // Return the count of expired reservations so caller can decide whether to reload
+    return expiredReservations.length;
+  } catch (error) {
+    console.error('Error checking and expiring reservations:', error);
+    // Don't show error to user, just log it
+    return 0;
+  }
+}
 
 async function loadStats() {
   try {
@@ -196,11 +235,11 @@ async function loadUserStats() {
     const userReservations = allReservations.filter(r => r.user_id == userId);
     const totalReservations = userReservations.length;
     
-    // Get upcoming reservations (future reservations)
+    // Get upcoming reservations (future reservations that are not cancelled or completed)
     const now = new Date();
     const upcomingReservations = userReservations.filter(r => {
       const startDate = new Date(r.startt);
-      return startDate > now && r.status !== 'Cancelled';
+      return startDate > now && r.status !== 'Cancelled' && r.status !== 'Completed';
     });
     
     document.getElementById('totalReservations').textContent = totalReservations;
@@ -250,8 +289,11 @@ async function loadUserUpcomingReservations() {
         .map(r => r.res_id)
     );
     
+    // Filter to only include reservations that are not cancelled or completed
     let userFutureReservations = futureReservations.filter(res => 
-      userReservationIds.has(res.res_id)
+      userReservationIds.has(res.res_id) && 
+      res.status !== 'Cancelled' && 
+      res.status !== 'Completed'
     );
     
     // Sort by start time to get the earliest upcoming reservation first
@@ -316,10 +358,9 @@ async function markReservationComplete(reservationId) {
     
     alert('Reservation marked as complete successfully!');
     
-    // Reload the upcoming reservations to reflect the change
-    await loadUserUpcomingReservations();
-    // Also reload user stats to update the count
-    await loadUserStats();
+    // Reload all relevant sections to reflect the change
+    await loadUserStats(); // Updates the upcoming reservations count
+    await loadUserUpcomingReservations(); // Updates the upcoming reservations display
   } catch (error) {
     console.error('Error marking reservation as complete:', error);
     alert('Error marking reservation as complete: ' + error.message);

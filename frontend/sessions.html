@@ -11,28 +11,62 @@
 <div id="navbar"></div>
 
 <h2>Create/Edit Charging Session</h2>
+<p>Use this form to create a new charging session or edit an existing one. You can link it to a reservation or create a walk-in session.</p>
+<div id="userInfoDisplay" style="margin-bottom: 15px; padding: 10px; background: #e8f4f8; border-radius: 5px; display: none;">
+  <strong>Creating session for:</strong> <span id="currentUserInfo"></span>
+</div>
 <form id="sessionForm">
   <input type="hidden" id="sessionId" name="id">
-  <input type="number" name="user_id" placeholder="User ID" required>
-  <input type="number" name="charger_id" placeholder="Charger ID" required>
-  <input type="number" name="res_id" placeholder="Reservation ID (optional)">
-  <input type="datetime-local" id="startTime" name="startt" required>
-  <input type="datetime-local" id="endTime" name="endt" required>
-  <input type="number" step="0.01" name="energy_delivered_kwh" placeholder="Energy (kWh)" required>
-  <input type="number" step="0.01" name="cost" placeholder="Cost" required>
-  <select name="payment_stat">
-    <option value="Pending">Pending</option>
-    <option value="Paid">Paid</option>
-    <option value="Failed">Failed</option>
+  <input type="hidden" id="userId" name="user_id">
+  <div id="userSelectContainer" style="display: none;">
+    <label>User:</label>
+    <select id="userSelect" name="user_id_select">
+      <option value="">Select User</option>
+    </select>
+  </div>
+  <label>Link to Reservation (optional):</label>
+  <select id="reservationSelect" name="res_id_select">
+    <option value="">No Reservation (Walk-in Session)</option>
   </select>
-  <button type="submit" id="submitBtn">Create Session</button>
-  <button type="button" id="cancelBtn" onclick="cancelEdit()" style="display:none;">Cancel</button>
+  <label>Charger:</label>
+  <select id="chargerId" name="charger_id" required>
+    <option value="">Select Charger</option>
+  </select>
+  <label>Start Time:</label>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <input type="date" id="startDate" required style="flex: 1; cursor: pointer;">
+    <select id="startTimeSelect" required style="flex: 1;">
+      <option value="">Select Time</option>
+    </select>
+  </div>
+  <input type="hidden" id="startTime" name="startt">
+  <label>End Time:</label>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <input type="date" id="endDate" required style="flex: 1; cursor: pointer;">
+    <select id="endTimeSelect" required style="flex: 1;">
+      <option value="">Select Time</option>
+    </select>
+  </div>
+  <input type="hidden" id="endTime" name="endt">
+  <input type="hidden" id="resId" name="res_id">
+  <label>Energy Delivered (kWh):</label>
+  <input type="number" step="0.01" id="energyDelivered" name="energy_delivered_kwh" placeholder="Calculated automatically" required readonly style="background-color: #f0f0f0;">
+  <label>Cost:</label>
+  <input type="number" step="0.01" id="cost" name="cost" placeholder="Calculated automatically" required readonly style="background-color: #f0f0f0;">
+  <button type="submit" id="submitBtn">Start Session</button>
+  <button type="button" id="cancelBtn" onclick="cancelEdit()" style="display:none;">Cancel Edit</button>
 </form>
 <div id="formResult"></div>
 
-<h2>Session Details</h2>
+<h2>Recent Sessions</h2>
+<p>View all recent charging sessions with their details and linked reservations.</p>
 <button onclick="loadSessionDetails()">Refresh Sessions</button>
 <div id="sessionDetails"></div>
+
+<h2>All Sessions</h2>
+<p>View all charging sessions including past and current sessions.</p>
+<button onclick="loadAllSessions()">Refresh All Sessions</button>
+<div id="allSessions"></div>
 
 <h2>Session Cost vs Rate Analysis</h2>
 <button onclick="loadSessionCostRate()">Refresh Analysis</button>

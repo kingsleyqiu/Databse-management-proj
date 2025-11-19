@@ -277,8 +277,44 @@ async function checkSchedulingConflict(chargerId, startDateTime, endDateTime, ex
   }
 }
 
+// Function to check and expire reservations that have passed their end time
+async function checkAndExpireReservations() {
+  try {
+    const now = new Date();
+    const allReservations = await getReservations();
+    
+    // Find reservations that should be expired (end time has passed, status is still Reserved)
+    const expiredReservations = allReservations.filter(res => {
+      if (res.status !== 'Reserved') return false; // Only check Reserved reservations
+      
+      const endDate = new Date(res.endt.replace(' ', 'T'));
+      return endDate < now; // End time has passed
+    });
+    
+    // Update each expired reservation
+    for (const reservation of expiredReservations) {
+      try {
+        await updateReservation(reservation.res_id, {
+          ...reservation,
+          status: 'Expired'
+        });
+        console.log(`Reservation ${reservation.res_id} has been expired`);
+      } catch (error) {
+        console.error(`Error expiring reservation ${reservation.res_id}:`, error);
+      }
+    }
+    
+    // Return the count of expired reservations so caller can decide whether to reload
+    return expiredReservations.length;
+  } catch (error) {
+    console.error('Error checking and expiring reservations:', error);
+    // Don't show error to user, just log it
+    return 0;
+  }
+}
+
 // Reservations functionality
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Check if user is logged in
   const role = localStorage.getItem("userRole");
   const userId = localStorage.getItem("userId");
@@ -353,6 +389,10 @@ document.addEventListener('DOMContentLoaded', () => {
     validateEndTimeAfterStart();
   });
   
+  // Check and expire reservations that have passed their end time
+  const expiredCount = await checkAndExpireReservations();
+  
+  // Always reload to ensure data is fresh (especially if reservations were expired)
   loadFutureReservations();
   loadAllReservations();
   setupForm();
