@@ -131,6 +131,44 @@ function validateStartTimeNotPast() {
   }
 }
 
+// Function to check for scheduling conflicts
+async function checkSchedulingConflict(chargerId, startDateTime, endDateTime, excludeReservationId = null) {
+  try {
+    // Get all reservations
+    const allReservations = await getReservations();
+    
+    // Filter reservations for the same charger and active statuses (exclude Cancelled and Expired)
+    const activeReservations = allReservations.filter(res => 
+      res.charger_id == chargerId && 
+      res.status !== 'Cancelled' && 
+      res.status !== 'Expired' &&
+      (excludeReservationId === null || res.res_id != excludeReservationId)
+    );
+    
+    // Check for overlaps
+    for (const reservation of activeReservations) {
+      const existingStart = new Date(reservation.startt.replace(' ', 'T'));
+      const existingEnd = new Date(reservation.endt.replace(' ', 'T'));
+      
+      // Check if time ranges overlap
+      // Two ranges overlap if: newStart < existingEnd AND newEnd > existingStart
+      if (startDateTime < existingEnd && endDateTime > existingStart) {
+        return {
+          hasConflict: true,
+          conflictingReservation: reservation
+        };
+      }
+    }
+    
+    return { hasConflict: false };
+  } catch (error) {
+    console.error('Error checking scheduling conflicts:', error);
+    // If there's an error checking conflicts, allow the reservation to proceed
+    // (fail open rather than fail closed to avoid blocking valid reservations)
+    return { hasConflict: false };
+  }
+}
+
 // Reservations functionality
 document.addEventListener('DOMContentLoaded', () => {
   // Check if user is logged in
@@ -366,6 +404,27 @@ function setupForm() {
     // Get form data
     const formData = new FormData(form);
     const reservationId = document.getElementById('reservationId').value;
+    const chargerId = parseInt(formData.get('charger_id'));
+    
+    // Validate charger is selected
+    if (!chargerId) {
+      resultDiv.innerHTML = '<p style="color: red;">Error: Please select a charger.</p>';
+      document.getElementById('chargerId').focus();
+      return;
+    }
+    
+    // Check for scheduling conflicts
+    const conflictCheck = await checkSchedulingConflict(chargerId, startDate, endDate, reservationId || null);
+    if (conflictCheck.hasConflict) {
+      const conflict = conflictCheck.conflictingReservation;
+      const conflictStart = new Date(conflict.startt.replace(' ', 'T'));
+      const conflictEnd = new Date(conflict.endt.replace(' ', 'T'));
+      const conflictStartStr = conflictStart.toLocaleString();
+      const conflictEndStr = conflictEnd.toLocaleString();
+      resultDiv.innerHTML = `<p style="color: red;">Error: Scheduling conflict detected. This charger is already reserved from ${conflictStartStr} to ${conflictEndStr}. Please select a different time slot.</p>`;
+      document.getElementById('startDate').focus();
+      return;
+    }
     
     // Get status: use admin's selection if admin, otherwise use 'Reserved' for new or preserve existing for edits
     let status = 'Reserved';
