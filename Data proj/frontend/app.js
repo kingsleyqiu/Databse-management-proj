@@ -25,7 +25,18 @@ document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
   });
 
   const data = await res.json();
-  document.getElementById("loginResult").innerText = JSON.stringify(data, null, 2);
+
+  // if backend returns { success: true, user: {...} }
+  if (data.success) {
+    // save user for dashboard use
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    // redirect to dashboard
+    window.location.href = "dashboard.html";
+  } else {
+    document.getElementById("loginResult").innerText =
+        data.message || "Invalid email or password";
+  }
 });
 
 // ------------------- LOAD SQL VIEW -------------------

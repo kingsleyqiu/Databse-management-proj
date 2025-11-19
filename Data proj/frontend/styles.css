@@ -1,114 +1,194 @@
-/* GLOBAL STYLING */
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f6f9;
+* {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
-/* HEADER BAR */
-.header {
-  background: #2c3e50;
-  color: white;
-  padding: 20px 30px;
-  font-size: 26px;
-  font-weight: bold;
+body {
+  font-family: "Inter", Arial, sans-serif;
+  background: #eef1f5;
+  color: #2b2b2b;
+  padding-bottom: 60px;
 }
 
-/* MAIN CONTENT WRAPPER */
-.container {
-  max-width: 950px;
-  margin: 40px auto;
-  padding: 0 20px;
+
+nav {
+  background: #1f2d3d;
+  padding: 14px 20px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-/* CARD BOXES */
-.card {
-  background: white;
+nav a {
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: 0.2s ease;
+}
+
+nav a:hover {
+  color: #00aaff;
+}
+
+
+h1, h2 {
+  text-align: center;
+}
+
+h1 {
+  margin-top: 25px;
+  font-size: 32px;
+  font-weight: 800;
+  color: #1f2d3d;
+}
+
+h2 {
+  margin: 25px 0 10px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #2b3a4a;
+}
+
+
+form {
+  max-width: 600px;
+  margin: 15px auto;
+  background: #ffffff;
   padding: 25px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  margin-bottom: 30px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
 }
 
-.card h2 {
-  margin-top: 0;
-  color: #2c3e50;
-}
-
-/* INPUTS */
 input, select {
   width: 100%;
   padding: 12px;
-  margin: 8px 0 15px 0;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  margin: 10px 0 18px;
+  border-radius: 10px;
+  border: 1px solid #ccd3dc;
+  background: #f9fafb;
   font-size: 15px;
+  transition: 0.2s ease;
 }
 
-/* BUTTONS */
+input:focus, select:focus {
+  border-color: #007bff;
+  outline: none;
+  background: #ffffff;
+}
+
+
 button {
   width: 100%;
-  padding: 12px;
-  background: #3498db;
+  padding: 13px;
+  background: #007bff;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 16px;
   cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s ease;
 }
 
 button:hover {
-  background: #2980b9;
+  background: #005fcc;
 }
 
-/* GREEN LINK BUTTON */
-.link-btn {
-  display: inline-block;
-  background: #27ae60;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 16px;
-  margin-top: 15px;
+
+button.inline-btn {
+  width: auto;
+  padding: 10px 18px;
 }
 
-.link-btn:hover {
-  background: #1e8449;
+
+.container {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 10px;
 }
 
-/* TABLE STYLING */
-#tableContainer {
+.card {
+  background: #ffffff;
+  padding: 22px;
+  border-radius: 14px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+  margin-bottom: 25px;
+}
+
+
+#tableContainer,
+#sessionDetails,
+#futureReservations,
+#allReservations,
+#recentStations,
+#stationUtilization,
+#chargerStatusSummary {
+  max-width: 1050px;
+  margin: 20px auto;
   overflow-x: auto;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 15px;
   background: white;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.08);
 }
 
 th {
-  background: #ecf0f1;
-  padding: 12px;
-  font-weight: bold;
-  border-bottom: 2px solid #ddd;
+  background: #e9edf2;
+  padding: 14px;
+  font-weight: 700;
+  font-size: 15px;
+  border-bottom: 2px solid #d3d9e2;
+  color: #2b3a4a;
 }
 
 td {
   padding: 12px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #edf0f3;
+  font-size: 15px;
+}
+
+tr:nth-child(even) {
+  background: #f7f9fc;
 }
 
 tr:hover {
-  background: #f2f2f2;
+  background: #eef6ff;
 }
 
-/* POPUP (if needed by frontend) */
+
+#searchFilterSection {
+  max-width: 850px;
+  margin: 20px auto;
+  background: white;
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+#searchFilterSection label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 5px;
+}
+
+#searchFilterSection select,
+#searchFilterSection input {
+  width: 220px;
+}
+
+/* ------------------------------ */
+/* POPUP */
+/* ------------------------------ */
 #popup-overlay {
   position: fixed;
   top: 0;
@@ -127,8 +207,8 @@ tr:hover {
   transform: translate(-50%, -50%);
   width: 420px;
   background: white;
-  padding: 22px;
-  border-radius: 12px;
+  padding: 25px;
+  border-radius: 14px;
   box-shadow: 0 0 20px rgba(0,0,0,0.25);
   display: none;
   z-index: 1000;
@@ -137,11 +217,6 @@ tr:hover {
 #details-popup button {
   margin-top: 15px;
   background: #007bff;
-  color: white;
-  padding: 10px 18px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
 }
 
 #details-popup button:hover {
