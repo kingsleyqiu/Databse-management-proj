@@ -1,23 +1,77 @@
-// Function to open calendar picker
-function openCalendar(inputId) {
-  const input = document.getElementById(inputId);
-  // Remove readonly temporarily to allow calendar to open
-  input.removeAttribute('readonly');
-  // Use showPicker() if available (modern browsers), otherwise focus and click
-  if (input.showPicker) {
-    input.showPicker().catch(() => {
-      // Fallback if showPicker fails
-      input.focus();
-      input.click();
-    });
-  } else {
-    input.focus();
-    input.click();
+// Function to generate 30-minute time increments
+function generateTimeOptions() {
+  const times = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let minute = 0; minute < 60; minute += 30) {
+      const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+      // Format for display: 12-hour format with AM/PM
+      const displayHour = hour === 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+      const displayTime = `${String(displayHour).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`;
+      times.push({ value: timeString, display: displayTime });
+    }
   }
-  // Re-add readonly after a short delay to prevent typing
-  setTimeout(() => {
-    input.setAttribute('readonly', 'readonly');
-  }, 200);
+  return times;
+}
+
+// Function to populate time select dropdowns
+function populateTimeSelects() {
+  const times = generateTimeOptions();
+  const startTimeSelect = document.getElementById('startTimeSelect');
+  const endTimeSelect = document.getElementById('endTimeSelect');
+  
+  // Clear existing options except the first one
+  while (startTimeSelect.options.length > 1) {
+    startTimeSelect.remove(1);
+  }
+  while (endTimeSelect.options.length > 1) {
+    endTimeSelect.remove(1);
+  }
+  
+  // Add time options
+  times.forEach(time => {
+    const option1 = document.createElement('option');
+    option1.value = time.value;
+    option1.textContent = time.display;
+    startTimeSelect.appendChild(option1);
+    
+    const option2 = document.createElement('option');
+    option2.value = time.value;
+    option2.textContent = time.display;
+    endTimeSelect.appendChild(option2);
+  });
+}
+
+// Function to combine date and time into datetime-local format
+function combineDateTime(dateValue, timeValue) {
+  if (!dateValue || !timeValue) return '';
+  return `${dateValue}T${timeValue}:00`;
+}
+
+// Function to split datetime-local into date and time
+function splitDateTime(dateTimeValue) {
+  if (!dateTimeValue) return { date: '', time: '' };
+  const parts = dateTimeValue.split('T');
+  if (parts.length !== 2) return { date: '', time: '' };
+  
+  const date = parts[0];
+  const timePart = parts[1];
+  // Remove seconds if present (HH:mm:ss -> HH:mm)
+  const time = timePart.split(':').slice(0, 2).join(':');
+  
+  return { date, time };
+}
+
+// Function to update hidden datetime field from date and time inputs
+function updateDateTimeField(prefix) {
+  const dateInput = document.getElementById(`${prefix}Date`);
+  const timeSelect = document.getElementById(`${prefix}TimeSelect`);
+  const hiddenInput = document.getElementById(`${prefix}Time`);
+  
+  if (dateInput.value && timeSelect.value) {
+    hiddenInput.value = combineDateTime(dateInput.value, timeSelect.value);
+  } else {
+    hiddenInput.value = '';
+  }
 }
 
 // Reservations functionality
@@ -46,22 +100,19 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUsers();
   }
   
-  // Setup calendar inputs to open picker on click
-  const startTimeInput = document.getElementById('startTime');
-  const endTimeInput = document.getElementById('endTime');
+  // Populate time select dropdowns with 30-minute increments
+  populateTimeSelects();
   
-  startTimeInput.addEventListener('click', () => openCalendar('startTime'));
-  endTimeInput.addEventListener('click', () => openCalendar('endTime'));
+  // Setup event listeners to update hidden datetime fields
+  const startDateInput = document.getElementById('startDate');
+  const startTimeSelect = document.getElementById('startTimeSelect');
+  const endDateInput = document.getElementById('endDate');
+  const endTimeSelect = document.getElementById('endTimeSelect');
   
-  // Prevent typing in datetime inputs
-  startTimeInput.addEventListener('keydown', (e) => {
-    e.preventDefault();
-    openCalendar('startTime');
-  });
-  endTimeInput.addEventListener('keydown', (e) => {
-    e.preventDefault();
-    openCalendar('endTime');
-  });
+  startDateInput.addEventListener('change', () => updateDateTimeField('start'));
+  startTimeSelect.addEventListener('change', () => updateDateTimeField('start'));
+  endDateInput.addEventListener('change', () => updateDateTimeField('end'));
+  endTimeSelect.addEventListener('change', () => updateDateTimeField('end'));
   
   loadFutureReservations();
   loadAllReservations();
@@ -92,20 +143,40 @@ function mysqlToDatetimeLocal(mysqlDateTime) {
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 }
 
-// Function to normalize datetime value (ensures it has seconds)
+// Function to round to 30-minute increments and set seconds to 00
+function roundTo30Minutes(value) {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!trimmed.includes('T')) return trimmed;
+  
+  // Parse the datetime value
+  const date = new Date(trimmed);
+  if (isNaN(date.getTime())) return trimmed;
+  
+  // Round minutes to nearest 30-minute increment
+  const minutes = date.getMinutes();
+  const roundedMinutes = Math.round(minutes / 30) * 30;
+  
+  // Set the rounded minutes and seconds to 00
+  date.setMinutes(roundedMinutes, 0);
+  date.setSeconds(0, 0);
+  
+  // Format back to datetime-local format (YYYY-MM-DDTHH:mm)
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const mins = String(date.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${mins}`;
+}
+
+// Function to normalize datetime value (ensures seconds are 00 and rounds to 30 minutes)
 function normalizeDateTimeValue(value) {
   if (!value) return '';
   const trimmed = value.trim();
-  // datetime-local can be 16 chars (YYYY-MM-DDTHH:mm) or 19 chars (YYYY-MM-DDTHH:mm:ss)
-  // If it's 16 chars, add :00 seconds to make it 19 chars
-  if (trimmed.length === 16 && trimmed.includes('T')) {
-    return trimmed + ':00';
-  }
-  // If it's already 19 chars, return as is
-  if (trimmed.length === 19 && trimmed.includes('T')) {
-    return trimmed;
-  }
-  return trimmed;
+  // Round to 30 minutes and ensure seconds are 00
+  return roundTo30Minutes(trimmed);
 }
 
 function setupForm() {
@@ -115,33 +186,29 @@ function setupForm() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    // Update hidden fields before submission
+    updateDateTimeField('start');
+    updateDateTimeField('end');
+    
     const startTimeInput = document.getElementById('startTime');
     const endTimeInput = document.getElementById('endTime');
     const resultDiv = document.getElementById('formResult');
     
-    // Get and normalize datetime values (ensure they have seconds)
-    let startTime = startTimeInput.value ? normalizeDateTimeValue(startTimeInput.value) : '';
-    let endTime = endTimeInput.value ? normalizeDateTimeValue(endTimeInput.value) : '';
+    // Get datetime values from hidden inputs
+    let startTime = startTimeInput.value;
+    let endTime = endTimeInput.value;
     
-    // Simple validation - check if values exist and are in correct format (16 or 19 chars)
-    if (!startTime || (startTime.length !== 16 && startTime.length !== 19)) {
+    // Validation - check if values exist
+    if (!startTime) {
       resultDiv.innerHTML = '<p style="color: red;">Error: Please select a complete start date and time.</p>';
-      startTimeInput.focus();
+      document.getElementById('startDate').focus();
       return;
     }
     
-    if (!endTime || (endTime.length !== 16 && endTime.length !== 19)) {
+    if (!endTime) {
       resultDiv.innerHTML = '<p style="color: red;">Error: Please select a complete end date and time.</p>';
-      endTimeInput.focus();
+      document.getElementById('endDate').focus();
       return;
-    }
-    
-    // Ensure both have seconds format (19 chars) for consistent processing
-    if (startTime.length === 16) {
-      startTime = startTime + ':00';
-    }
-    if (endTime.length === 16) {
-      endTime = endTime + ':00';
     }
     
     // Get user_id from hidden field
@@ -151,30 +218,26 @@ function setupForm() {
       return;
     }
     
-    // Convert datetime-local to MySQL datetime format (preserve seconds from input)
+    // Convert datetime-local to MySQL datetime format (seconds are already 00)
     const startDate = new Date(startTime);
     const endDate = new Date(endTime);
     
     // Validate dates are valid
     if (isNaN(startDate.getTime())) {
       resultDiv.innerHTML = '<p style="color: red;">Error: Invalid start time. Please select a valid date and time.</p>';
-      startTimeInput.focus();
+      document.getElementById('startDate').focus();
       return;
     }
     
     if (isNaN(endDate.getTime())) {
       resultDiv.innerHTML = '<p style="color: red;">Error: Invalid end time. Please select a valid date and time.</p>';
-      endTimeInput.focus();
+      document.getElementById('endDate').focus();
       return;
     }
     
-    // Extract seconds from input if provided, otherwise use 00
-    const startSeconds = startTime.length === 19 ? startTime.split(':')[2] : '00';
-    const endSeconds = endTime.length === 19 ? endTime.split(':')[2] : '00';
-    
-    // Set the seconds from the input
-    startDate.setSeconds(parseInt(startSeconds), 0);
-    endDate.setSeconds(parseInt(endSeconds), 0);
+    // Ensure seconds are 00 (should already be, but double-check)
+    startDate.setSeconds(0, 0);
+    endDate.setSeconds(0, 0);
     
     // Convert to MySQL datetime format (YYYY-MM-DD HH:mm:ss)
     const startt = startDate.toISOString().slice(0, 19).replace('T', ' ');
@@ -208,11 +271,16 @@ function setupForm() {
       document.getElementById('submitBtn').textContent = 'Create Reservation';
       document.getElementById('cancelBtn').style.display = 'none';
       
-      // Ensure readonly is maintained on datetime inputs after reset
-      const startTimeInput = document.getElementById('startTime');
-      const endTimeInput = document.getElementById('endTime');
-      startTimeInput.setAttribute('readonly', 'readonly');
-      endTimeInput.setAttribute('readonly', 'readonly');
+      // Reset date and time inputs
+      document.getElementById('startDate').value = '';
+      document.getElementById('startTimeSelect').value = '';
+      document.getElementById('endDate').value = '';
+      document.getElementById('endTimeSelect').value = '';
+      document.getElementById('startTime').value = '';
+      document.getElementById('endTime').value = '';
+      
+      // Repopulate time selects
+      populateTimeSelects();
       
       // Reset user ID based on role
       const role = localStorage.getItem("userRole");
@@ -371,7 +439,13 @@ async function loadAllReservations() {
       return;
     }
     
-    let html = '<table><tr><th>Reservation ID</th><th>User ID</th><th>Charger ID</th><th>Start Time</th><th>End Time</th><th>Status</th><th>Has Session</th></tr>';
+    // Add Actions column for admins
+    const isAdmin = role === "admin";
+    let html = '<table><tr><th>Reservation ID</th><th>User ID</th><th>Charger ID</th><th>Start Time</th><th>End Time</th><th>Status</th><th>Has Session</th>';
+    if (isAdmin) {
+      html += '<th>Actions</th>';
+    }
+    html += '</tr>';
     reservations.forEach(res => {
       html += `<tr>
         <td>${res.res_id}</td>
@@ -380,8 +454,15 @@ async function loadAllReservations() {
         <td>${formatDateTime(res.startt)}</td>
         <td>${formatDateTime(res.endt)}</td>
         <td>${res.status}</td>
-        <td>${res.has_session ? 'Yes' : 'No'}</td>
-      </tr>`;
+        <td>${res.has_session ? 'Yes' : 'No'}</td>`;
+      if (isAdmin) {
+        html += `<td>
+          <button onclick="editReservation(${res.res_id})">Edit</button>
+          <button onclick="cancelReservation(${res.res_id}, '${res.status}')">Cancel</button>
+          <button onclick="deleteReservationConfirm(${res.res_id})">Delete</button>
+        </td>`;
+      }
+      html += '</tr>';
     });
     html += '</table>';
     container.innerHTML = html;
@@ -425,17 +506,27 @@ async function editReservation(id) {
     
     document.getElementById('chargerId').value = reservation.charger_id;
     
-    // Convert MySQL datetime to datetime-local format (preserve seconds, use local time)
+    // Convert MySQL datetime to datetime-local format (round to 30 minutes, set seconds to 00)
     const startLocal = mysqlToDatetimeLocal(reservation.startt);
     const endLocal = mysqlToDatetimeLocal(reservation.endt);
     
-    const startTimeInput = document.getElementById('startTime');
-    const endTimeInput = document.getElementById('endTime');
-    startTimeInput.value = startLocal;
-    endTimeInput.value = endLocal;
-    // Ensure readonly is maintained
-    startTimeInput.setAttribute('readonly', 'readonly');
-    endTimeInput.setAttribute('readonly', 'readonly');
+    // Round to 30 minutes and split into date and time
+    const startRounded = roundTo30Minutes(startLocal);
+    const endRounded = roundTo30Minutes(endLocal);
+    
+    const startSplit = splitDateTime(startRounded);
+    const endSplit = splitDateTime(endRounded);
+    
+    // Populate date and time inputs
+    document.getElementById('startDate').value = startSplit.date;
+    document.getElementById('startTimeSelect').value = startSplit.time;
+    document.getElementById('endDate').value = endSplit.date;
+    document.getElementById('endTimeSelect').value = endSplit.time;
+    
+    // Update hidden fields
+    updateDateTimeField('start');
+    updateDateTimeField('end');
+    
     form.querySelector('[name="status"]').value = reservation.status;
     
     // Change button text and show cancel
@@ -461,11 +552,16 @@ function cancelEdit() {
   document.getElementById('cancelBtn').style.display = 'none';
   document.getElementById('formResult').innerHTML = '';
   
-  // Ensure readonly is maintained on datetime inputs
-  const startTimeInput = document.getElementById('startTime');
-  const endTimeInput = document.getElementById('endTime');
-  startTimeInput.setAttribute('readonly', 'readonly');
-  endTimeInput.setAttribute('readonly', 'readonly');
+  // Reset date and time inputs
+  document.getElementById('startDate').value = '';
+  document.getElementById('startTimeSelect').value = '';
+  document.getElementById('endDate').value = '';
+  document.getElementById('endTimeSelect').value = '';
+  document.getElementById('startTime').value = '';
+  document.getElementById('endTime').value = '';
+  
+  // Repopulate time selects
+  populateTimeSelects();
   
   // Reset user ID based on role
   if (role === "admin") {

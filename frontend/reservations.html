@@ -29,11 +29,21 @@
     <option value="">Select Charger</option>
   </select>
   <label>Start Time:</label>
-  <div style="position: relative; display: flex; align-items: center;">
-    <input type="datetime-local" id="startTime" name="startt" step="1" required style="cursor: pointer;" readonly>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <input type="date" id="startDate" required style="flex: 1; cursor: pointer;">
+    <select id="startTimeSelect" required style="flex: 1;">
+      <option value="">Select Time</option>
+    </select>
   </div>
+  <input type="hidden" id="startTime" name="startt">
   <label>End Time:</label>
-  <input type="datetime-local" id="endTime" name="endt" step="1" required style="cursor: pointer;" readonly>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <input type="date" id="endDate" required style="flex: 1; cursor: pointer;">
+    <select id="endTimeSelect" required style="flex: 1;">
+      <option value="">Select Time</option>
+    </select>
+  </div>
+  <input type="hidden" id="endTime" name="endt">
   <label>Status:</label>
   <select name="status">
     <option value="Reserved">Reserved</option>
