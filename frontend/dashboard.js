@@ -228,9 +228,12 @@ async function loadChargerStatusSummary() {
 async function loadUserStats() {
   try {
     const userId = localStorage.getItem("userId");
-    if (!userId) return;
+    if (!userId) {
+      console.error('No user ID found');
+      return;
+    }
 
-    // Get user's reservations
+    // Get user's reservations - filter by user_id
     const allReservations = await getReservations();
     const userReservations = allReservations.filter(r => r.user_id == userId);
     const totalReservations = userReservations.length;
@@ -238,19 +241,20 @@ async function loadUserStats() {
     // Get upcoming reservations (future reservations that are not cancelled or completed)
     const now = new Date();
     const upcomingReservations = userReservations.filter(r => {
-      const startDate = new Date(r.startt);
+      const startDate = new Date(r.startt.replace(' ', 'T'));
       return startDate > now && r.status !== 'Cancelled' && r.status !== 'Completed';
     });
     
     document.getElementById('totalReservations').textContent = totalReservations;
     document.getElementById('upcomingReservations').textContent = upcomingReservations.length;
     
-    // Get user's sessions
-    const allSessions = await getSessions();
-    const userSessions = allSessions.filter(s => s.user_id == userId);
+    // Get user's sessions from session-details view (which includes user_id)
+    // This ensures we're only getting sessions for this specific user
+    const sessionDetails = await getView('session-details');
+    const userSessions = sessionDetails.filter(s => s.user_id == userId);
     const totalSessions = userSessions.length;
     
-    // Calculate total spent and energy
+    // Calculate total spent and energy for this user only
     const totalSpent = userSessions.reduce((sum, session) => {
       return sum + (parseFloat(session.cost) || 0);
     }, 0);
@@ -262,6 +266,8 @@ async function loadUserStats() {
     document.getElementById('userTotalSessions').textContent = totalSessions;
     document.getElementById('totalSpent').textContent = '$' + totalSpent.toFixed(2);
     document.getElementById('totalEnergy').textContent = totalEnergy.toFixed(2) + ' kWh';
+    
+    console.log(`User stats loaded for user ${userId}: ${totalSessions} sessions, $${totalSpent.toFixed(2)} spent, ${totalEnergy.toFixed(2)} kWh`);
   } catch (error) {
     console.error('Error loading user stats:', error);
     const errorMsg = error.message || 'Error loading data';
