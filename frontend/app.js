@@ -117,6 +117,8 @@ async function handleLogout() {
 
 // ------------------- CHART MANAGEMENT -------------------
 let chartInstances = [];
+let currentViewData = null; // Store current view data for export
+let currentViewName = null; // Store current view name for export
 
 function destroyAllCharts() {
   chartInstances.forEach(chart => {
@@ -1013,6 +1015,96 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// ------------------- EXPORT FUNCTIONS -------------------
+
+function exportToCSV() {
+  if (!currentViewData || currentViewData.length === 0) {
+    alert('No data to export. Please load a view first.');
+    return;
+  }
+
+  // Get column headers
+  const headers = Object.keys(currentViewData[0]);
+  
+  // Create CSV content
+  let csvContent = headers.join(',') + '\n';
+  
+  // Add data rows
+  currentViewData.forEach(row => {
+    const values = headers.map(header => {
+      const value = row[header];
+      // Handle values that might contain commas or quotes
+      if (value === null || value === undefined) return '';
+      const stringValue = String(value);
+      // Escape quotes and wrap in quotes if contains comma or quote
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return '"' + stringValue.replace(/"/g, '""') + '"';
+      }
+      return stringValue;
+    });
+    csvContent += values.join(',') + '\n';
+  });
+
+  // Create blob and download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${currentViewName || 'report'}_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function exportToPDF() {
+  if (!currentViewData || currentViewData.length === 0) {
+    alert('No data to export. Please load a view first.');
+    return;
+  }
+
+  // Check if jsPDF is loaded
+  if (typeof window.jspdf === 'undefined') {
+    alert('PDF library not loaded. Please refresh the page.');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('landscape'); // Use landscape for wider tables
+
+  // Get column headers
+  const headers = Object.keys(currentViewData[0]);
+  
+  // Prepare data for autotable
+  const tableData = currentViewData.map(row => {
+    return headers.map(header => {
+      const value = row[header];
+      return value === null || value === undefined ? '' : String(value);
+    });
+  });
+
+  // Add title
+  const viewTitle = currentViewName || 'Report';
+  doc.setFontSize(16);
+  doc.text(viewTitle, 14, 15);
+  doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
+
+  // Add table using autotable plugin
+  doc.autoTable({
+    head: [headers],
+    body: tableData,
+    startY: 28,
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [66, 139, 202] },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+    margin: { top: 28 }
+  });
+
+  // Save PDF
+  doc.save(`${currentViewName || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`);
+}
+
 // ------------------- LOAD SQL VIEW -------------------
 document.getElementById("loadViewBtn")?.addEventListener("click", async () => {
   const view = document.getElementById("viewSelector").value;
@@ -1029,16 +1121,24 @@ document.getElementById("loadViewBtn")?.addEventListener("click", async () => {
 
     const rows = await getView(view);
     console.log('Data received:', rows?.length || 0, 'rows');
+    
+    // Store data for export
+    currentViewData = rows;
+    currentViewName = view;
 
     if (!Array.isArray(rows)) {
       document.getElementById("chartContainer").innerHTML = "";
       document.getElementById("tableContainer").innerHTML = "Error loading view";
+      document.getElementById("exportCSVBtn").style.display = "none";
+      document.getElementById("exportPDFBtn").style.display = "none";
       return;
     }
 
     if (rows.length === 0) {
       document.getElementById("chartContainer").innerHTML = "<p>No data available for this view.</p>";
       document.getElementById("tableContainer").innerHTML = "";
+      document.getElementById("exportCSVBtn").style.display = "none";
+      document.getElementById("exportPDFBtn").style.display = "none";
       return;
     }
 
@@ -1105,9 +1205,24 @@ document.getElementById("loadViewBtn")?.addEventListener("click", async () => {
     html += "</table>";
 
     document.getElementById("tableContainer").innerHTML = html;
+    
+    // Show export buttons if we have data
+    if (rows.length > 0) {
+      document.getElementById("exportCSVBtn").style.display = "inline-block";
+      document.getElementById("exportPDFBtn").style.display = "inline-block";
+    } else {
+      document.getElementById("exportCSVBtn").style.display = "none";
+      document.getElementById("exportPDFBtn").style.display = "none";
+    }
   } catch (error) {
     console.error('Error loading view:', error);
     document.getElementById("chartContainer").innerHTML = "";
     document.getElementById("tableContainer").innerHTML = `<p style="color: red;">Error loading view: ${error.message}</p>`;
+    document.getElementById("exportCSVBtn").style.display = "none";
+    document.getElementById("exportPDFBtn").style.display = "none";
   }
 });
+
+// Export button event listeners
+document.getElementById("exportCSVBtn")?.addEventListener("click", exportToCSV);
+document.getElementById("exportPDFBtn")?.addEventListener("click", exportToPDF);

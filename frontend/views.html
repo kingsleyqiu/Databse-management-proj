@@ -4,6 +4,8 @@
   <title>EV Charging Reports</title>
   <link rel="stylesheet" href="css.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <style>
     .chart-container {
       margin: 20px 0;
@@ -58,6 +60,8 @@
   </select>
 
   <button id="loadViewBtn">Load View</button>
+  <button id="exportCSVBtn" style="display: none;">Export CSV</button>
+  <button id="exportPDFBtn" style="display: none;">Export PDF</button>
 </div>
 
 <div id="chartContainer"></div>
