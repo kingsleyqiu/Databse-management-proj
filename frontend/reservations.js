@@ -91,12 +91,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('userId').value = userId;
     // Hide user selection for regular users
     document.getElementById('userSelectContainer').style.display = 'none';
+    // Hide status selector for regular users
+    document.getElementById('statusSelectContainer').style.display = 'none';
     // Show user info display
     displayCurrentUserInfo(userId);
   } else {
     // Show user selection for admins
     document.getElementById('userSelectContainer').style.display = 'block';
     document.getElementById('userInfoDisplay').style.display = 'none';
+    // Show status selector for admins
+    document.getElementById('statusSelectContainer').style.display = 'block';
     loadUsers();
   }
   
@@ -194,20 +198,30 @@ function setupForm() {
     const endTimeInput = document.getElementById('endTime');
     const resultDiv = document.getElementById('formResult');
     
-    // Get datetime values from hidden inputs
-    let startTime = startTimeInput.value;
-    let endTime = endTimeInput.value;
+    // Get date and time values directly from inputs
+    const startDateValue = document.getElementById('startDate').value;
+    const startTimeValue = document.getElementById('startTimeSelect').value;
+    const endDateValue = document.getElementById('endDate').value;
+    const endTimeValue = document.getElementById('endTimeSelect').value;
     
     // Validation - check if values exist
-    if (!startTime) {
+    if (!startDateValue || !startTimeValue) {
       resultDiv.innerHTML = '<p style="color: red;">Error: Please select a complete start date and time.</p>';
-      document.getElementById('startDate').focus();
+      if (!startDateValue) {
+        document.getElementById('startDate').focus();
+      } else {
+        document.getElementById('startTimeSelect').focus();
+      }
       return;
     }
     
-    if (!endTime) {
+    if (!endDateValue || !endTimeValue) {
       resultDiv.innerHTML = '<p style="color: red;">Error: Please select a complete end date and time.</p>';
-      document.getElementById('endDate').focus();
+      if (!endDateValue) {
+        document.getElementById('endDate').focus();
+      } else {
+        document.getElementById('endTimeSelect').focus();
+      }
       return;
     }
     
@@ -218,11 +232,15 @@ function setupForm() {
       return;
     }
     
-    // Convert datetime-local to MySQL datetime format (seconds are already 00)
-    const startDate = new Date(startTime);
-    const endDate = new Date(endTime);
+    // Convert directly to MySQL datetime format (YYYY-MM-DD HH:mm:ss)
+    // This avoids timezone conversion issues by using the exact values selected
+    const startt = `${startDateValue} ${startTimeValue}:00`;
+    const endt = `${endDateValue} ${endTimeValue}:00`;
     
-    // Validate dates are valid
+    // Validate the datetime strings are valid by creating Date objects
+    const startDate = new Date(startt.replace(' ', 'T'));
+    const endDate = new Date(endt.replace(' ', 'T'));
+    
     if (isNaN(startDate.getTime())) {
       resultDiv.innerHTML = '<p style="color: red;">Error: Invalid start time. Please select a valid date and time.</p>';
       document.getElementById('startDate').focus();
@@ -235,24 +253,28 @@ function setupForm() {
       return;
     }
     
-    // Ensure seconds are 00 (should already be, but double-check)
-    startDate.setSeconds(0, 0);
-    endDate.setSeconds(0, 0);
-    
-    // Convert to MySQL datetime format (YYYY-MM-DD HH:mm:ss)
-    const startt = startDate.toISOString().slice(0, 19).replace('T', ' ');
-    const endt = endDate.toISOString().slice(0, 19).replace('T', ' ');
-    
     // Get form data
     const formData = new FormData(form);
     const reservationId = document.getElementById('reservationId').value;
+    
+    // Get status: use admin's selection if admin, otherwise use 'Reserved' for new or preserve existing for edits
+    let status = 'Reserved';
+    const role = localStorage.getItem("userRole");
+    if (role === "admin") {
+      const statusSelect = document.getElementById('statusSelect');
+      status = statusSelect ? statusSelect.value || 'Reserved' : 'Reserved';
+    } else if (reservationId) {
+      // For non-admin edits, preserve existing status
+      const existingReservation = await getReservation(reservationId);
+      status = existingReservation.status;
+    }
     
     const data = {
       user_id: parseInt(userId),
       charger_id: parseInt(formData.get('charger_id')),
       startt: startt,
       endt: endt,
-      status: formData.get('status') || 'Reserved'
+      status: status
     };
     
     try {
@@ -287,6 +309,12 @@ function setupForm() {
       const userIdFromStorage = localStorage.getItem("userId");
       if (role !== "admin") {
         document.getElementById('userId').value = userIdFromStorage;
+      } else {
+        // Reset status selector for admins
+        const statusSelect = document.getElementById('statusSelect');
+        if (statusSelect) {
+          statusSelect.value = 'Reserved';
+        }
       }
       
       await loadFutureReservations();
@@ -527,7 +555,13 @@ async function editReservation(id) {
     updateDateTimeField('start');
     updateDateTimeField('end');
     
-    form.querySelector('[name="status"]').value = reservation.status;
+    // If admin, populate status selector
+    if (role === "admin") {
+      const statusSelect = document.getElementById('statusSelect');
+      if (statusSelect) {
+        statusSelect.value = reservation.status;
+      }
+    }
     
     // Change button text and show cancel
     document.getElementById('submitBtn').textContent = 'Update Reservation';
@@ -568,10 +602,16 @@ function cancelEdit() {
     document.getElementById('userId').value = '';
     document.getElementById('userSelectContainer').style.display = 'block';
     document.getElementById('userInfoDisplay').style.display = 'none';
+    document.getElementById('statusSelectContainer').style.display = 'block';
+    const statusSelect = document.getElementById('statusSelect');
+    if (statusSelect) {
+      statusSelect.value = 'Reserved';
+    }
     loadUsers();
   } else {
     document.getElementById('userId').value = userId;
     document.getElementById('userSelectContainer').style.display = 'none';
+    document.getElementById('statusSelectContainer').style.display = 'none';
     displayCurrentUserInfo(userId);
   }
   

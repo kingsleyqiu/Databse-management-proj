@@ -44,13 +44,15 @@
     </select>
   </div>
   <input type="hidden" id="endTime" name="endt">
-  <label>Status:</label>
-  <select name="status">
-    <option value="Reserved">Reserved</option>
-    <option value="Cancelled">Cancelled</option>
-    <option value="Completed">Completed</option>
-    <option value="Expired">Expired</option>
-  </select>
+  <div id="statusSelectContainer" style="display: none;">
+    <label>Status:</label>
+    <select id="statusSelect" name="status">
+      <option value="Reserved">Reserved</option>
+      <option value="Cancelled">Cancelled</option>
+      <option value="Completed">Completed</option>
+      <option value="Expired">Expired</option>
+    </select>
+  </div>
   <button type="submit" id="submitBtn">Create Reservation</button>
   <button type="button" id="cancelBtn" onclick="cancelEdit()" style="display:none;">Cancel Edit</button>
 </form>
