@@ -417,7 +417,6 @@ function displayUserProfile(userData) {
       <div>
         <p><strong>Car:</strong> ${carInfo}</p>
         <p><strong>User ID:</strong> ${userData.user_id}</p>
-        <p><strong>Role:</strong> ${userData.role}</p>
       </div>
     </div>
     <button onclick="startEditUserProfile()">Edit Profile</button>
