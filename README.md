@@ -322,14 +322,4 @@ Potential improvements for future versions:
 - Verify Chart.js CDN is accessible
 - Ensure data is loaded before rendering charts
 
-## License
-
-ISC
-
-## Authors
-
-Database Management System - Final Project
-
-## Acknowledgments
-
 Built as a comprehensive database management system project demonstrating full-stack development with Node.js, Express, MySQL, and modern web technologies.
