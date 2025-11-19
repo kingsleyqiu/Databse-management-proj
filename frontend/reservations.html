@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reservation Management - EV Charging</title>
+  <link rel="stylesheet" href="css.css">
+</head>
+<body>
+
+<h1>Book Reservations</h1>
+
+<div id="navbar"></div>
+
+<h2>Create or Edit Reservation</h2>
+<p>Use this form to create a new reservation or edit an existing one. Select a user, charger, and time slot.</p>
+<form id="reservationForm">
+  <input type="hidden" id="reservationId" name="id">
+  <label>User:</label>
+  <select id="userId" name="user_id" required>
+    <option value="">Select User</option>
+  </select>
+  <label>Charger:</label>
+  <select id="chargerId" name="charger_id" required>
+    <option value="">Select Charger</option>
+  </select>
+  <label>Start Time:</label>
+  <input type="datetime-local" id="startTime" name="startt" required>
+  <label>End Time:</label>
+  <input type="datetime-local" id="endTime" name="endt" required>
+  <label>Status:</label>
+  <select name="status">
+    <option value="Reserved">Reserved</option>
+    <option value="Cancelled">Cancelled</option>
+    <option value="Completed">Completed</option>
+    <option value="Expired">Expired</option>
+  </select>
+  <button type="submit" id="submitBtn">Create Reservation</button>
+  <button type="button" id="cancelBtn" onclick="cancelEdit()" style="display:none;">Cancel Edit</button>
+</form>
+<div id="formResult"></div>
+
+<h2>Upcoming Reservations</h2>
+<p>View all future reservations that are scheduled to occur.</p>
+<button onclick="loadFutureReservations()">Refresh Future Reservations</button>
+<div id="futureReservations"></div>
+
+<h2>All Reservations</h2>
+<p>View all reservations including past, current, and future bookings with their session status.</p>
+<button onclick="loadAllReservations()">Refresh All Reservations</button>
+<div id="allReservations"></div>
+
+<script src="api.js"></script>
+<script src="navbar.js"></script>
+<script src="reservations.js"></script>
+</body>
+</html>
