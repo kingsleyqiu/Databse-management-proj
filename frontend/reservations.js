@@ -1,3 +1,25 @@
+// Function to open calendar picker
+function openCalendar(inputId) {
+  const input = document.getElementById(inputId);
+  // Remove readonly temporarily to allow calendar to open
+  input.removeAttribute('readonly');
+  // Use showPicker() if available (modern browsers), otherwise focus and click
+  if (input.showPicker) {
+    input.showPicker().catch(() => {
+      // Fallback if showPicker fails
+      input.focus();
+      input.click();
+    });
+  } else {
+    input.focus();
+    input.click();
+  }
+  // Re-add readonly after a short delay to prevent typing
+  setTimeout(() => {
+    input.setAttribute('readonly', 'readonly');
+  }, 200);
+}
+
 // Reservations functionality
 document.addEventListener('DOMContentLoaded', () => {
   // Check if user is logged in
@@ -23,6 +45,23 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('userInfoDisplay').style.display = 'none';
     loadUsers();
   }
+  
+  // Setup calendar inputs to open picker on click
+  const startTimeInput = document.getElementById('startTime');
+  const endTimeInput = document.getElementById('endTime');
+  
+  startTimeInput.addEventListener('click', () => openCalendar('startTime'));
+  endTimeInput.addEventListener('click', () => openCalendar('endTime'));
+  
+  // Prevent typing in datetime inputs
+  startTimeInput.addEventListener('keydown', (e) => {
+    e.preventDefault();
+    openCalendar('startTime');
+  });
+  endTimeInput.addEventListener('keydown', (e) => {
+    e.preventDefault();
+    openCalendar('endTime');
+  });
   
   loadFutureReservations();
   loadAllReservations();
@@ -168,6 +207,12 @@ function setupForm() {
       document.getElementById('reservationId').value = '';
       document.getElementById('submitBtn').textContent = 'Create Reservation';
       document.getElementById('cancelBtn').style.display = 'none';
+      
+      // Ensure readonly is maintained on datetime inputs after reset
+      const startTimeInput = document.getElementById('startTime');
+      const endTimeInput = document.getElementById('endTime');
+      startTimeInput.setAttribute('readonly', 'readonly');
+      endTimeInput.setAttribute('readonly', 'readonly');
       
       // Reset user ID based on role
       const role = localStorage.getItem("userRole");
@@ -384,8 +429,13 @@ async function editReservation(id) {
     const startLocal = mysqlToDatetimeLocal(reservation.startt);
     const endLocal = mysqlToDatetimeLocal(reservation.endt);
     
-    document.getElementById('startTime').value = startLocal;
-    document.getElementById('endTime').value = endLocal;
+    const startTimeInput = document.getElementById('startTime');
+    const endTimeInput = document.getElementById('endTime');
+    startTimeInput.value = startLocal;
+    endTimeInput.value = endLocal;
+    // Ensure readonly is maintained
+    startTimeInput.setAttribute('readonly', 'readonly');
+    endTimeInput.setAttribute('readonly', 'readonly');
     form.querySelector('[name="status"]').value = reservation.status;
     
     // Change button text and show cancel
@@ -410,6 +460,12 @@ function cancelEdit() {
   document.getElementById('submitBtn').textContent = 'Create Reservation';
   document.getElementById('cancelBtn').style.display = 'none';
   document.getElementById('formResult').innerHTML = '';
+  
+  // Ensure readonly is maintained on datetime inputs
+  const startTimeInput = document.getElementById('startTime');
+  const endTimeInput = document.getElementById('endTime');
+  startTimeInput.setAttribute('readonly', 'readonly');
+  endTimeInput.setAttribute('readonly', 'readonly');
   
   // Reset user ID based on role
   if (role === "admin") {
