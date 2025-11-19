@@ -1,36 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>EV Charging Views</title>
+  <title>EV Charging Reports</title>
   <link rel="stylesheet" href="css.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .chart-container {
+      margin: 20px 0;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .chart-wrapper {
+      position: relative;
+      height: 400px;
+      margin-bottom: 20px;
+    }
+    #chartContainer {
+      margin-bottom: 30px;
+    }
+    .view-controls {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 5px;
+    }
+    .view-controls select, .view-controls button {
+      padding: 8px 15px;
+      margin-right: 10px;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
 
-<h1>SQL Report Views</h1>
+<h1>Reports & Analytics</h1>
 
 <div id="navbar"></div>
 
-</br>
+<div class="view-controls">
+  <select id="viewSelector">
+    <option value="session-details">Session Details</option>
+    <option value="max-avg-rate">Max Avg Operator Rate</option>
+    <option value="reservations-session">Reservations w/ Session</option>
+    <option value="pricing-full">Station Pricing Full</option>
+    <option value="resources">Available Resources</option>
+    <option value="station-util">Station Utilization</option>
+    <option value="user-total-paid">User Total Paid</option>
+    <option value="future-res-details">Future Reservations</option>
+    <option value="charger-status">Charger Status Summary</option>
+    <option value="session-cost-rate">Session Cost vs Rate</option>
+    <option value="user-compatible">User Compatible Chargers</option>
+    <option value="vacancy">Station Vacancy</option>
+    <option value="next-available">Next Available Time</option>
+    <option value="reliability">Station Reliability</option>
+  </select>
 
-<select id="viewSelector">
-  <option value="session-details">Session Details</option>
-  <option value="max-avg-rate">Max Avg Operator Rate</option>
-  <option value="reservations-session">Reservations w/ Session</option>
-  <option value="pricing-full">Station Pricing Full</option>
-  <option value="resources">Available Resources</option>
-  <option value="station-util">Station Utilization</option>
-  <option value="user-total-paid">User Total Paid</option>
-  <option value="future-res-details">Future Reservations</option>
-  <option value="charger-status">Charger Status Summary</option>
-  <option value="session-cost-rate">Session Cost vs Rate</option>
-  <option value="user-compatible">User Compatible Chargers</option>
-  <option value="vacancy">Station Vacancy</option>
-  <option value="next-available">Next Available Time</option>
-  <option value="reliability">Station Reliability</option>
-</select>
+  <button id="loadViewBtn">Load View</button>
+</div>
 
-<button id="loadViewBtn">Load View</button>
-
+<div id="chartContainer"></div>
 <div id="tableContainer"></div>
 
 <script src="api.js"></script>
